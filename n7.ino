@@ -28,7 +28,7 @@
 #define PIN_SERVO_ON 6
 #define PIN_PUMP_ON 9
 
-#define _B 0
+//#define _B 0
 #define _R 1
 #define _G 2
 #define _B 3
@@ -150,13 +150,9 @@ void vStatus() {
   static int iStatus;
   switch (iStatus) {
     case 0:
-      cascade.fill();
+      cascade.clear();
       vLedEf2(LedData2, 1);
-#if(_DEBAG_)
-      Serial.println(flVolts());
-      Serial.println(fiCapBat(flVolts()));
-#endif
-      vPrintCapBat(fiCapBat(flVolts()));
+      vPrintCapBat();
       iStatus = 10;
       break;
     case 10:
@@ -167,7 +163,7 @@ void vStatus() {
     case 20://                                                     Доза
       //        cascade[1].clear();
       fPrintChar(igDoza + 18);
-      vRefreshFoto();
+      vSensRumsRefresh();
       iStatus = 21;
       buttDn.isHolded();
       buttUp.isHolded();
@@ -178,12 +174,29 @@ void vStatus() {
       if (myTimer.isReady()) {
         cascade.clear();
       }
-      if ( vSensRums()) {
+      if ( bSensRums()) {
         myTimer.setTimeout(_LED_OFF);
-        //     vRefreshFoto();
         fPrintChar(igDoza + 18);
+        vSensRumsRefresh();
       }
-      vDoza();
+      if (buttUp.isClick() ) {
+        fPrintChar(igDoza + 18);
+        vSensRumsRefresh();
+        myTimer.setTimeout(_LED_OFF);
+        if (igDoza < 2) {
+          igDoza++;
+
+        }
+      }
+      if (buttDn.isClick()  ) {
+        fPrintChar(igDoza + 18);
+        vSensRumsRefresh();
+        myTimer.setTimeout(_LED_OFF);
+        if (igDoza > 0) {
+          igDoza--;
+
+        }
+      }
       if (buttDn.isHolded()) {
         iStatus = 70;
       }
@@ -192,7 +205,7 @@ void vStatus() {
       }
       if (buttEnt.isClick()) {
         iStatus = 40;
-         vRefreshFoto();
+        vSensRumsRefresh();
       }
       break;
     case 30://                                             калибровка фтотодатчиков
@@ -202,7 +215,7 @@ void vStatus() {
       buttUp.isDouble();
       buttEnt.isDouble();
       buttEnt.isClick();
-      vRefreshFoto();
+      vSensRumsRefresh();
       break;
     case 31://                                             калибровка фтотодатчиков
 #if(_DEBAG_)
@@ -210,7 +223,7 @@ void vStatus() {
         vTestFoto();
       }
 #endif
-      vSensRums();
+      bSensRums();
       if (buttEnt.isHolded()) {
         vSaveFotoSens();
         iStatus = 20;
@@ -227,7 +240,7 @@ void vStatus() {
       }
       break;
     case 40://                                             налив
-      vPrintCapBat(fiCapBat(flVolts()));
+      vPrintCapBat();
       vNaliv();
 #if(_DEBAG_)
       Serial.println("Налито");
@@ -294,7 +307,7 @@ void vStatus() {
     case 80://Зарядка
       cascade.clear();
       iStatus = 81;
-      vPrintCapBat(fiCapBat(flVolts()));//   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      vPrintCapBat();//   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       myTimer.setTimeout(5000);   // настроить таймаут
       buttEnt.isDouble();
       buttDn.isDouble();
@@ -332,10 +345,45 @@ void vStatus() {
       vLedEfSel(iNumEf);
       break;
     case 100:// автоналив
-      fPrintChar(24);// п
+      fPrintChar(igDoza + 24);// а
       iStatus = 101;
+      vSensRumsRefresh();
       break;
     case 101:// автоналив
+      bSensRums();
+      if (((iRum[0] == 1) || (iRum[1] == 1) || (iRum[2] == 1) || (iRum[3] == 1) || (iRum[4] == 1) || (iRum[5] == 1)) && !myTimer.isEnabled()  ) {
+        myTimer.setTimeout(3000);   // настроить таймаут
+      }
+      if (myTimer.isReady()) {
+        vNaliv();
+      }
+      if (buttEnt.isClick() ) {
+#if(_DEBAG_)
+        Serial.println(iRum[0] );
+        Serial.println(iRum[1] );
+        Serial.println(iRum[2] );
+        Serial.println(iRum[3] );
+        Serial.println(iRum[4] );
+        Serial.println(iRum[5] );
+#endif
+
+        myTimer.setTimeout(3000);   // настроить таймаут
+      }
+      if (buttUp.isClick() ) {
+        if (igDoza < 2) {
+          igDoza++;
+          fPrintChar(igDoza + 24);
+
+        }
+      }
+      if (buttDn.isClick()  ) {
+        if (igDoza > 0) {
+          igDoza--;
+          fPrintChar(igDoza + 24);
+
+        }
+      }
+
       if (buttDn.isHolded()) {
         iStatus = 20;
       }
@@ -357,7 +405,7 @@ void fPrintChar(int iNumChar) {
 void bPovorot(int iUgol) {
   static int iUgolLast;
   if (iUgol != iUgolLast) {
-    vSensRums();
+    bSensRums();
     servo.setTargetDeg(iUgol);
     while (!servo.tick()) {
 #if(_UGOL_)
@@ -385,49 +433,30 @@ void vTuneFotosens() {
   Serial.println("Уставки без рюмок");
 #endif
 }
-void vRgb(int iRgb, int iLed) {
-  switch (iRgb) {
-    case 0:
-      cascade[1].off(0, iLed ); //красный
-      cascade[1].off(1, iLed);//зеленый
-      cascade[1].off(2, iLed);// синий
-      break;
-    case 1:
-      cascade[1].on(0, iLed ); //красный
-      cascade[1].off(1, iLed);//зеленый
-      cascade[1].off(2, iLed);// синий
-      break;
-    case 2:
-      cascade[1].off(0, iLed ); //красный
-      cascade[1].on(1, iLed);//зеленый
-      cascade[1].off(2, iLed);// синий
-      break;
-    case 3:
-      cascade[1].off(0, iLed ); //красный
-      cascade[1].off(1, iLed);//зеленый
-      cascade[1].on(2, iLed);// синий
-      break;
-    case 4:
-      cascade[1].on(0, iLed ); //красный
-      cascade[1].on(1, iLed);//зеленый
-      cascade[1].on(2, iLed);// синий
-      break;
-  }
-}
-bool vLedRum(int iPos) {
-  if (iRumLast[iPos] != iRum[iPos]) {
+
+bool bLedRum(int iPos, bool bRefFresh) {
+  if ((iRumLast[iPos] != iRum[iPos]) || bRefFresh) {
     switch (iRum[iPos]) {
-      case 0: vRgb(_R, iPos + 1);
+      case 0:
+        cascade[1].on(0, iPos + 1 ); //красный
+        cascade[1].off(1, iPos + 1);//зеленый
+        cascade[1].off(2, iPos + 1);// синий
 #if(_DEBAG_)
         Serial.println("Красный");
 #endif
         break;
-      case 1: vRgb(_G, iPos + 1);
+      case 1:
+        cascade[1].off(0, iPos + 1 ); //красный
+        cascade[1].on(1, iPos + 1);//зеленый
+        cascade[1].off(2, iPos + 1);// синий
 #if(_DEBAG_)
         Serial.println("зеленый");
 #endif
         break;
-      case 2: vRgb(_B, iPos + 1);
+      case 2:
+        cascade[1].off(0, iPos + 1 ); //красный
+        cascade[1].off(1, iPos + 1);//зеленый
+        cascade[1].on(2, iPos + 1);// синий
 #if(_DEBAG_)
         Serial.println("Синий");
 #endif
@@ -438,21 +467,29 @@ bool vLedRum(int iPos) {
   } else return 0;
 }
 void vFotoRum(int iPos) {
-  if (iUst[iPos] - analogRead(iPos + 1) > iUstDif[iPos]  ) {
+  if ((iUst[iPos] - analogRead(iPos + 1) > iUstDif[iPos]) ) {
     if ( iRum[iPos] != 2) {
       iRum[iPos] = 1;
     }
   }
   else  iRum[iPos] = 0;
 }
-bool vSensRums() {
+bool bSensRums() {
   bool Rsult;
   for (int iPos = 0; iPos < 6; iPos++) {
     vFotoRum(iPos);
-    Rsult = Rsult +  vLedRum(iPos);
+    Rsult = Rsult +  bLedRum(iPos, 0);
   }
   return Rsult;
-}//vSensRums()
+}//bSensRums()
+void vSensRumsRefresh() {
+  bool Rsult;
+  for (int iPos = 0; iPos < 6; iPos++) {
+    vFotoRum(iPos);
+    bLedRum(iPos, 1);
+  }
+
+}//bSensRums()
 void vSaveFotoSens() {
   EEPROM.put(0, iUst[0]);
   EEPROM.put(2, iUst[1]);
@@ -656,7 +693,7 @@ void vPump(unsigned long ulTime) {
     myTimer.setTimeout(ulTime);   // настроить таймаут
     digitalWrite(PIN_PUMP_ON, 1);
     while (!myTimer.isReady()) {
-      vSensRums();
+      bSensRums();
     }
     digitalWrite(PIN_PUMP_ON, 0);
   }
@@ -664,7 +701,7 @@ void vPump(unsigned long ulTime) {
 void  DelayWithSensRum(unsigned long ulTime) {
   myTimer.setTimeout(ulTime);   // настроить таймаут
   while (!myTimer.isReady()) {
-    vSensRums();
+    bSensRums();
   }
 }
 int  DelayWithSensRum( int iStatCuret, int StatJamp) {
@@ -750,22 +787,10 @@ void vNaliv() {
     }
   }
 }
-void vDoza() {
-  if (buttUp.isClick() and igDoza < 2) {
-    igDoza++;
-    fPrintChar(igDoza + 18);
-  }
-  if (buttDn.isClick() and igDoza > 0) {
-    igDoza--;
-    fPrintChar(igDoza + 18);
-  }
+void vPrintCapBat() {
 
-}
-int flVolts() {
-  return analogRead(7) * _ARDUINO_PIT / 1023 * 1000;
-}
-int fiCapBat(int volts) {
   int capacity;
+  int volts =  analogRead(7) * _ARDUINO_PIT / 1023 * 1000;
   if (volts > 3870)
     capacity = map(volts, 4200, 3870, 100, 77);
   else if ((volts <= 3870) && (volts > 3750) )
@@ -780,37 +805,27 @@ int fiCapBat(int volts) {
   Serial.println(volts);
   Serial.println(capacity);
 #endif
-  return capacity;
-}
-void vPrintCapBat(int Vbat) {
-
-  if (Vbat <= 10) {
+  if (capacity <= 10) {
     fPrintChar(10);// батарейка 0 -10%
   }
-  if ((10 < Vbat) && (Vbat <= 30) ) {
+  if ((10 < capacity) && (capacity <= 30) ) {
     fPrintChar(11);// батарейка 10 - 30%
   }
-  if ((30 < Vbat) && (Vbat <= 50) ) {
+  if ((30 < capacity) && (capacity <= 50) ) {
     fPrintChar(12);// батарейка 30 - 50%
   }
-  if ((50 < Vbat) && (Vbat <= 60)) {
+  if ((50 < capacity) && (capacity <= 60)) {
     fPrintChar(13);// батарейка  50 - 60 %
   }
-  if ((60 < Vbat) && (Vbat <= 80)) {
+  if ((60 < capacity) && (capacity <= 80)) {
     fPrintChar(14);// батарейка  60 - 80%
   }
-  if ((80 < Vbat) && (Vbat <= 90)) {
+  if ((80 < capacity) && (capacity <= 90)) {
     fPrintChar(15);// батарейка 80% - 90%
   }
-  if ( Vbat > 90) {
+  if ( capacity > 90) {
     fPrintChar(16);// батарейка 100%
   }
-}
-void vRefreshFoto() {
-  iRumLast[0] = 1; iRumLast[1] = 1; iRumLast[2] = 1; iRumLast[3] = 1; iRumLast[4] = 1; iRumLast[5] = 1;
-  vSensRums();
-  iRumLast[0] = 0; iRumLast[1] = 0; iRumLast[2] = 0; iRumLast[3] = 0; iRumLast[4] = 0; iRumLast[5] = 0;
-  vSensRums();
 }
 #if(_DEBAG_)
 void vTestFoto() {
@@ -995,7 +1010,6 @@ void vTestServo2() {
     }
   }
 }
-#endif
 void vLedEf(byte* LedData) {
   int iCount = 0;
   cascade[1].clear();
@@ -1012,6 +1026,8 @@ void vLedEf(byte* LedData) {
     }
   }
 }
+#endif
+
 bool vLedEf2(byte* LedData, bool bButton) {
   static bool bFlag;
   static int iCount = 0;
@@ -1062,10 +1078,4 @@ void vLedEfSel(int iSel) {
       vLedEf2(LedData3,  buttEnt.isSingle());
       break;
   }
-}
-void vPuskAvtoNal() {
-
-}
-bool bLedsOf() {
-
 }
