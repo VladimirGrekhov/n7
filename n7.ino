@@ -1,5 +1,5 @@
 //08 12 2019
-#define _DEBAG_ 1
+#define _DEBAG_ 0
 #define _UGOL_ 0
 #define _PRINT_BAT_ 0
 
@@ -160,8 +160,7 @@ void vStatus() {
         iStatus = 20;
       }
       break;
-    case 20://                                                     Доза
-      //        cascade[1].clear();
+    case 20://*************************************************************** 20 РЮМКА (Доза)
       fPrintChar(igDoza + 18);
       vSensRumsRefresh();
       iStatus = 21;
@@ -169,6 +168,7 @@ void vStatus() {
       buttUp.isHolded();
       buttEnt.isClick();
       myTimer.setTimeout(_LED_OFF);
+       buttDn.setTimeout(_TIME_OUT_R);        // настройка таймаута на удержание (по умолчанию 500 мс)
       break;
     case 21://
       if (myTimer.isReady()) {
@@ -180,92 +180,90 @@ void vStatus() {
         vSensRumsRefresh();
       }
       if (buttUp.isClick() ) {
-        fPrintChar(igDoza + 18);
         vSensRumsRefresh();
         myTimer.setTimeout(_LED_OFF);
         if (igDoza < 2) {
           igDoza++;
-
         }
+         fPrintChar(igDoza + 18);
       }
       if (buttDn.isClick()  ) {
-        fPrintChar(igDoza + 18);
         vSensRumsRefresh();
         myTimer.setTimeout(_LED_OFF);
         if (igDoza > 0) {
           igDoza--;
-
         }
+         fPrintChar(igDoza + 18); 
       }
       if (buttDn.isHolded()) {
-        iStatus = 70;
+        iStatus = 70;//
       }
       if (buttUp.isHolded()) {
-        iStatus = 100;
+        iStatus = 100;// на автоналив
       }
       if (buttEnt.isClick()) {
-        iStatus = 40;
+        iStatus = 40;// на налив
         vSensRumsRefresh();
       }
       break;
-    case 30://                                             калибровка фтотодатчиков
+    case 30://********************************************************************** 30  калибровка фтотодатчиков
       fPrintChar(17);//Ф
       iStatus = 31;
       buttEnt.isHolded();
-      buttUp.isDouble();
-      buttEnt.isDouble();
+      buttUp.isHolded();
       buttEnt.isClick();
       vSensRumsRefresh();
+       buttDn.setTimeout(_TIME_OUT_R);        // настройка таймаута на удержание (по умолчанию 500 мс)
       break;
-    case 31://                                             калибровка фтотодатчиков
-#if(_DEBAG_)
-      if (buttDn.isClick()) {
-        vTestFoto();
-      }
-#endif
+    case 31://----------------------------------------------------------------------31  калибровка фтотодатчиков
       bSensRums();
       if (buttEnt.isHolded()) {
         vSaveFotoSens();
-        iStatus = 20;
+          vTuneFotosens();
+       
+          cascade[0].on(7, 0);
       }
-      if (buttUp.isDouble()) {
-        iStatus = 50;
+      if (buttUp.isHolded()) {
+        iStatus = 70;
       }
-      if (buttEnt.isDouble()) {
-        cascade[0].on(7, 0);
-        vTuneFotosens();
+      if (buttDn.isHolded()) {
+        iStatus = 60;
       }
       if (buttEnt.isClick()) {
         cascade[0].off(7, 0);
       }
       break;
-    case 40://                                             налив
+    case 40:// ****************************************************** 40 налив
       vPrintCapBat();
       vNaliv();
 #if(_DEBAG_)
       Serial.println("Налито");
 #endif
-      iStatus = 20;
+      iStatus = 20;// на рюмку
       break;
 
-    case 50://калибровка серво
+    case 50://******************************************************** 50 калибровка серво
       cascade.clear();
       fPrintChar(22);//c
       cascade[1].on(1, (1)); // зеленый
       iStatus = 51;
+      buttUp.isHolded();
       buttDn.isHolded();
       buttEnt.isHolded();
       buttEnt.isClick();
       buttDn.isClick();
       buttUp.isClick();
       break;
-    case 51://
+    case 51:// -----------------------------------------------------------51 калиб. серво
       vCalibServo();
+      if (buttUp.isHolded()) {
+        iStatus = 60;// на калиб. насос
+      }
       if (buttDn.isHolded()) {
-        iStatus = 30;
+        iStatus = 20;// на рюмку
       }
       break;
-    case 60://Калибровка насоса
+    case 60://************************************************************ 60 Калибровка насоса
       fPrintChar(23);// н
       cascade[0].on(7, 0);
       buttEnt.setDebounce(10);// настройка антидребезга
@@ -278,54 +276,60 @@ void vStatus() {
     case 61://Калибровка насоса
       vPumpCalib();
       if (buttUp.isHolded()) {
-        buttEnt.setDebounce(_DEBOUNCE_R);// настройка антидребезга (по умолчанию 80 мс)
-        iStatus = 20;
+        buttEnt.setDebounce(_DEBOUNCE_R);// настройка антидребезга
+        iStatus = 30;// на фотодатчики
+      }
+      if (buttDn.isHolded()) {
+        buttEnt.setDebounce(_DEBOUNCE_R);// настройка антидребезга
+        iStatus = 50;// на серво
       }
       break;
-    case 70://Промывка
+    case 70://************************************************************** 70 Промывка
       fPrintChar(21);// п
       iStatus = 71;
       buttDn.isHolded();
       buttDn.isClick();
       buttUp.isClick();
       myTimer.setTimeout(5000);   // настроить таймаут
+       buttDn.setTimeout(_TIME_OUT_R);        // настройка таймаута на удержание (по умолчанию 500 мс)
       break;
     case 71://Промывка
       iStatus = DelayWithSensRum(iStatus, 20);
       if (buttUp.isClick()) {
-        iStatus = 20;
+        iStatus = 20;// на рюмку
       }
-      if (buttDn.isClick()) {
+      if (buttDn.isHolded()) {
         buttEnt.isClick();
-        iStatus = 80;
+        myTimer.setTimeout(5000);   // настроить таймаут
+        iStatus = 80;// на зарядку
       }
       if (buttEnt.state()) {
         digitalWrite(PIN_PUMP_ON, 1);
         myTimer.setTimeout(5000);   // настроить таймаут
       } else digitalWrite(PIN_PUMP_ON, 0);
       break;
-    case 80://Зарядка
+    case 80://Зарядка ******************************************************* 80 Зарядка
       cascade.clear();
       iStatus = 81;
       vPrintCapBat();//   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       myTimer.setTimeout(5000);   // настроить таймаут
-      buttEnt.isDouble();
-      buttDn.isDouble();
+      buttEnt.isHolded();
+       buttDn.setTimeout(3000);        // настройка таймаута на удержание (по умолчанию 500 мс)
       buttUp.isClick();
       break;
     case 81://
-      if (buttEnt.isDouble()) {
-        iStatus = 30;
-      }
-      if (buttDn.isDouble()) {
-        iStatus = 60;
+     
+      if (buttDn.isHolded()) {
+        myTimer.setTimeout(5000);   // настроить таймаут
+        iStatus = 30;// на калибровку фототдатчиков
       }
       if (buttUp.isClick()) {
-        iStatus = 70;
+        myTimer.setTimeout(5000);   // настроить таймаут
+        iStatus = 70;//
       }
       iStatus = DelayWithSensRum(iStatus, 20);
       break;
-    case 90:// Световые эфекты
+    case 90://****************************************************************90 Световые эфекты
       buttUp.isClick();
       buttDn.isClick();
       fPrintChar(LedEfNum(buttUp.isClick(), buttDn.isClick()));// 0 - 9
@@ -333,7 +337,7 @@ void vStatus() {
       buttDn.isHolded();
       buttEnt.isClick();
       break;
-    case 91:// Световые эфекты
+    case 91://*****************************************************************91 Световые эфекты
       int iNumEf ;
       if (buttDn.isHolded()) {
         iStatus = 100;
@@ -344,30 +348,20 @@ void vStatus() {
       }
       vLedEfSel(iNumEf);
       break;
-    case 100:// автоналив
+    case 100://**************************************************************** автоналив
       fPrintChar(igDoza + 24);// а
       iStatus = 101;
       vSensRumsRefresh();
       break;
     case 101:// автоналив
       bSensRums();
-      if (((iRum[0] == 1) || (iRum[1] == 1) || (iRum[2] == 1) || (iRum[3] == 1) || (iRum[4] == 1) || (iRum[5] == 1)) && !myTimer.isEnabled()  ) {
+      if (bSensRums()) {
         myTimer.setTimeout(3000);   // настроить таймаут
       }
       if (myTimer.isReady()) {
         vNaliv();
       }
       if (buttEnt.isClick() ) {
-#if(_DEBAG_)
-        Serial.println(iRum[0] );
-        Serial.println(iRum[1] );
-        Serial.println(iRum[2] );
-        Serial.println(iRum[3] );
-        Serial.println(iRum[4] );
-        Serial.println(iRum[5] );
-#endif
-
-        myTimer.setTimeout(3000);   // настроить таймаут
       }
       if (buttUp.isClick() ) {
         if (igDoza < 2) {
@@ -573,6 +567,7 @@ void vCalibServo() {
     cascade[0].setRow(7, 255);
   }
   if (buttEnt.isClick()) {
+    cascade[0].setRow(7, 0);
     if (iPosN < 6) {
       cascade[1].off(1, (iPosN + 1)); // зеленый
       iPosN++;
@@ -781,7 +776,6 @@ void vNaliv() {
         break;
       case 70:
         bPovorot(igPosDeg[0]);
-        //         DelayWithSensRum(1000);
         iPosNaliv = 100;
         break;
     }
