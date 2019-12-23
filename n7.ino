@@ -1,5 +1,5 @@
 //08 12 2019
-#define _DEBAG_ 0
+#define _DEBAG_ 1
 #define _UGOL_ 0
 #define _PRINT_BAT_ 0
 
@@ -85,6 +85,14 @@ void setup() {
   } else {
 #if(_DEBAG_)
     Serial.println("eep Foto !");
+#endif
+  }
+  EEPROM.get(51, iTemp);
+  if (iTemp == 77) {
+    vGetFotoSensR();
+  } else {
+#if(_DEBAG_)
+    Serial.println("eep Diff !");
 #endif
   }
 
@@ -233,7 +241,7 @@ void vStatus() {
       break;
     case 31://----------------------------------------------------------------------31  калибровка фтотодатчиков
       bSensRums();
-      if (buttEnt.isHolded()) {
+      if (buttEnt.isClick()) {
         vTuneFotosens();
         vSaveFotoSens();
         cascade[0].on(7, 0);
@@ -244,7 +252,9 @@ void vStatus() {
       if (buttDn.isHolded()) {
         iStatus = 60;
       }
-      if (buttEnt.isClick()) {
+      if (buttEnt.isHolded()) {
+        vTuneFotosensR();
+        vSaveFotoSensR();
         cascade[0].off(7, 0);
       }
       break;
@@ -530,7 +540,6 @@ void vTuneFotosens() {
   Serial.println("Уставки без рюмок");
 #endif
 }
-
 bool bLedRum(int iPos, bool bRefFresh) {
   if ((iRumLast[iPos] != iRum[iPos]) || bRefFresh) {
     switch (iRum[iPos]) {
@@ -611,6 +620,15 @@ void vSaveTimePomp() {
   EEPROM.put(34, ulTimePamp[2]);
   EEPROM.put(38, 77);
 }
+void vSaveFotoSensR() {
+  EEPROM.put(39, iUstDif[0]);
+  EEPROM.put(41, iUstDif[1]);
+  EEPROM.put(43, iUstDif[2]);
+  EEPROM.put(45, iUstDif[3]);
+  EEPROM.put(47, iUstDif[4]);
+  EEPROM.put(49, iUstDif[5]);
+  EEPROM.put(51, 77);
+}
 void vGetTimePomp() {
   EEPROM.get(26, ulTimePamp[0]);
   EEPROM.get(30, ulTimePamp[1]);
@@ -656,6 +674,23 @@ void vGetServoPos() {
   Serial.println( igPosDeg[4]);
   Serial.println( igPosDeg[5]);
 #endif
+}
+void vGetFotoSensR() {
+  EEPROM.get(39, iUstDif[0]);
+  EEPROM.get(41, iUstDif[1]);
+  EEPROM.get(43, iUstDif[2]);
+  EEPROM.get(45, iUstDif[3]);
+  EEPROM.get(47, iUstDif[4]);
+  EEPROM.get(49, iUstDif[5]);
+  #if(_DEBAG_)
+  Serial.println("Диф");
+  Serial.println( iUstDif[0]);
+  Serial.println( iUstDif[1]);
+  Serial.println( iUstDif[2]);
+  Serial.println( iUstDif[3]);
+  Serial.println( iUstDif[4]);
+  Serial.println( iUstDif[5]);
+  #endif
 }
 void vCalibServo() {
 
@@ -1301,4 +1336,21 @@ void vRuchRum() {
   }
   servo.tick();
   bPovorot(igPosDeg[iRuchPos]);
+}
+void vTuneFotosensR(){
+ iUstDif[0] = (iUst[0] -  analogRead(1))/4;
+  iUstDif[1] =  (iUst[1] -  analogRead(2))/4;
+  iUstDif[2] =  (iUst[2] -  analogRead(3))/4;
+  iUstDif[3] =  (iUst[3] -  analogRead(4))/4;
+  iUstDif[4] =  (iUst[4] -  analogRead(5))/4;
+  iUstDif[5] =  (iUst[5] -  analogRead(6))/4;
+  #if(_DEBAG_)
+  Serial.println( iUstDif[0]);
+  Serial.println( iUstDif[1]);
+  Serial.println( iUstDif[2]);
+  Serial.println( iUstDif[3]);
+  Serial.println( iUstDif[4]);
+  Serial.println( iUstDif[5]);
+  Serial.println("Уставки диф");
+#endif
 }
