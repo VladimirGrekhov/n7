@@ -1,5 +1,5 @@
 //08 12 2019
-#define _DEBAG_ 1
+#define _DEBAG_ 0
 #define _UGOL_ 0
 #define _PRINT_BAT_ 0
 
@@ -319,26 +319,32 @@ void vStatus() {
       }
       break;
     case 70://************************************************************** 70 Промывка
-      fPrintChar(21);// п
+    vSensRumsRefresh();
+      vPrintCapBat();
       iStatus = 71;
       buttDn.isHolded();
       buttDn.isClick();
       buttUp.isClick();
+       buttUp.isHolded();
       myTimer.setTimeout(5000);   // настроить таймаут
-      buttDn.setTimeout(_TIME_OUT_R);        // настройка таймаута на удержание (по умолчанию 500 мс)
+      buttDn.setTimeout(3000);        // настройка таймаута на удержание (по умолчанию 500 мс)
       break;
     case 71://Промывка
+     bSensRums();
       iStatus = DelayWithSensRum(iStatus, 20);
-      if (buttUp.isClick()) {
+      if (buttUp.isClick() or buttUp.isHolded()) {
         iStatus = 20;// на рюмку
       }
       if (buttDn.isHolded()) {
         buttEnt.isClick();
         myTimer.setTimeout(5000);   // настроить таймаут
-        iStatus = 80;// на зарядку
+        iStatus = 30;// на калиб фото
       }
       if (buttEnt.state()) {
+        if ( iRum[0] != 0) {
         digitalWrite(PIN_PUMP_ON, 1);
+        iRum[0] = 2;
+        }
         myTimer.setTimeout(5000);   // настроить таймаут
       } else digitalWrite(PIN_PUMP_ON, 0);
       break;
