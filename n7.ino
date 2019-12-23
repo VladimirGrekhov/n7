@@ -1,5 +1,5 @@
 //08 12 2019
-#define _DEBAG_ 1
+#define _DEBAG_ 0
 #define _UGOL_ 0
 #define _PRINT_BAT_ 0
 
@@ -54,8 +54,8 @@ ServoSmooth servo;
 
 #include <EEPROM.h>
 
-int iUst[6]{972,903,755,716,574,876};
-int iUstDif[6]{_FOTO_DIF_1, _FOTO_DIF_2, _FOTO_DIF_3, _FOTO_DIF_4, _FOTO_DIF_5, _FOTO_DIF_6};
+int iUst[6] {972, 903, 755, 716, 574, 876};
+int iUstDif[6] {_FOTO_DIF_1, _FOTO_DIF_2, _FOTO_DIF_3, _FOTO_DIF_4, _FOTO_DIF_5, _FOTO_DIF_6};
 int igPosDeg[6] {0, 37, 63, 97, 129, 180};
 int iRum[6];
 int iRumLast[6] {1, 1, 1, 1, 1, 1};
@@ -63,6 +63,7 @@ unsigned long ulTimePamp[3] = {100, 200, 300};
 int igDoza = 2;
 int iAutoDoza =  0;
 int iPosN;
+int iNcalibPamp;
 void setup() {
 
   pinMode(PIN_SERVO_ON, OUTPUT);
@@ -77,7 +78,7 @@ void setup() {
   Serial.println("D_E_B_A_G");
 #endif
   byte iTemp;
-  
+
   EEPROM.get(12, iTemp);
   if (iTemp == 77) {
     vGetFotoSens();
@@ -86,7 +87,7 @@ void setup() {
     Serial.println("eep Foto !");
 #endif
   }
-  
+
   EEPROM.get(25, iTemp);
   if (iTemp == 77) {
     vGetServoPos();
@@ -95,7 +96,7 @@ void setup() {
     Serial.println("eep servo !");
 #endif
   }
-  
+
   EEPROM.get(38, iTemp);
   if (iTemp == 77) {
     vGetTimePomp();
@@ -181,6 +182,7 @@ void vStatus() {
       buttEnt.isClick();
       myTimer.setTimeout(_LED_OFF);
       buttDn.setTimeout(_TIME_OUT_R);        // настройка таймаута на удержание (по умолчанию 500 мс)
+       bPovorot(igPosDeg[0]);
       break;
     case 21://
       if (myTimer.isReady()) {
@@ -227,6 +229,7 @@ void vStatus() {
       buttEnt.isClick();
       vSensRumsRefresh();
       buttDn.setTimeout(_TIME_OUT_R);        // настройка таймаута на удержание (по умолчанию 500 мс)
+       bPovorot(igPosDeg[0]);
       break;
     case 31://----------------------------------------------------------------------31  калибровка фтотодатчиков
       bSensRums();
@@ -265,19 +268,20 @@ void vStatus() {
       buttEnt.isClick();
       buttDn.isClick();
       buttUp.isClick();
-      cascade[1].clear(); 
+      cascade[1].clear();
       iPosN = 0;
       cascade[1].on(1, (iPosN + 1)); // зеленый
+       bPovorot(igPosDeg[0]);
       break;
     case 51:// -----------------------------------------------------------51 калиб. серво
       vCalibServo();
       if (buttUp.isHolded()) {
-         bPovorot(igPosDeg[0]);
+        bPovorot(igPosDeg[0]);
         iStatus = 60;// на калиб. насос
       }
       if (buttDn.isHolded()) {
-         bPovorot(igPosDeg[0]);
-        iStatus = 20;// на рюмку 
+        bPovorot(igPosDeg[0]);
+        iStatus = 20;// на рюмку
       }
       break;
     case 60://************************************************************ 60 Калибровка насоса
@@ -289,6 +293,9 @@ void vStatus() {
       buttUp.isClick();
       buttDn.isClick();
       buttEnt.isClick();
+      vSensRumsRefresh();
+      iNcalibPamp = 0;
+       bPovorot(igPosDeg[0]);
       break;
     case 61://Калибровка насоса
       vPumpCalib();
@@ -651,8 +658,8 @@ void vGetServoPos() {
 #endif
 }
 void vCalibServo() {
-   
-//  static bool flagLad;
+
+  //  static bool flagLad;
   if (!servo.tick()) {
 #if(_DEBAG_)
     Serial.println(servo.getCurrentDeg());
@@ -665,12 +672,12 @@ void vCalibServo() {
   if (buttEnt.isClick()) {
     cascade[0].setRow(7, 0);
     if (iPosN < 6) {
-      cascade[1].clear(); 
+      cascade[1].clear();
       iPosN++;
       cascade[1].on(1, (iPosN + 1)); // зеленый
     }
     if (iPosN > 5) {
-      cascade[1].clear(); 
+      cascade[1].clear();
       iPosN = 0;
       cascade[1].on(1, (iPosN + 1)); // зеленый
     }
@@ -698,8 +705,8 @@ void vPumpCalib() {
   static unsigned long ulStartNalivTime;
 
   static bool bTrigStart = 0;
-  static int iNcalibPamp;
   static int iDoza;
+  vSensRumsRefresh();
   if (buttUp.isClick()) {
     if (iNcalibPamp < 6) {
       iNcalibPamp++;
@@ -707,19 +714,34 @@ void vPumpCalib() {
       cascade[0].on(7, iNcalibPamp);
     }
     switch (iNcalibPamp) {
+      case 0:
+        bPovorot(igPosDeg[0]);
+        break;
       case 1:
-        if (iNcalibPamp == 1 and ulTimeNaliv != 0 ) {
+        bPovorot(igPosDeg[1]);
+        if (ulTimeNaliv != 0 ) {
           ulTimePamp[0] = ulTimeNaliv;
+          iRum[0] = 2;
+          break;
+        case 2:
+          bPovorot(igPosDeg[2]);
           break;
         case 3:
+          bPovorot(igPosDeg[3]);
           if ( ulTimeNaliv != 0 ) {
             ulTimePamp[1] = ulTimeNaliv;
             Serial.println(ulTimePamp[1]);
+            iRum[2] = 2;
           }
           break;
+        case 4:
+          bPovorot(igPosDeg[4]);
+          break;
         case 5:
+          bPovorot(igPosDeg[5]);
           if ( ulTimeNaliv != 0 ) {
             ulTimePamp[2] = ulTimeNaliv;
+            iRum[4] = 2;
           }
           break;
         case 6:
@@ -736,14 +758,35 @@ void vPumpCalib() {
       cascade[0].setRow(7, 0);
       cascade[0].on(7, iNcalibPamp);
     }
+    switch (iNcalibPamp) {
+      case 0:
+        bPovorot(igPosDeg[0]);
+        break;
+      case 1:
+        bPovorot(igPosDeg[1]);
+        break;
+      case 2:
+        bPovorot(igPosDeg[2]);
+        break;
+      case 3:
+        bPovorot(igPosDeg[3]);
+        break;
+      case 4:
+        bPovorot(igPosDeg[4]);
+        break;
+      case 5:
+        bPovorot(igPosDeg[5]);
+        break;
+    }
   }
   if (buttEnt.state() and (iNcalibPamp == 0 or iNcalibPamp == 2 or iNcalibPamp == 4 )) {
-
+ if ( iRum[iNcalibPamp] == 1) {
     if (!bTrigStart) {
       bTrigStart = 1;
       ulStartTime = millis();
       digitalWrite(PIN_PUMP_ON, 1);
     }
+ }
   } else {
     digitalWrite(PIN_PUMP_ON, 0);
     if (bTrigStart) {
@@ -771,7 +814,10 @@ void vPumpCalib() {
           iDoza = 2;
           break;
       }// end switch
+      if ( iRum[iNcalibPamp] == 1) {
       vPump(ulTimePamp[iDoza]);
+      iRum[iNcalibPamp] = 2;
+      }
     }
     if (iNcalibPamp == 6 ) {
       vSaveTimePomp();
@@ -835,19 +881,19 @@ void vNaliv(int iDoz) {
         if ( iRum[1] == 1) {
           bPovorot(igPosDeg[1]);
           DelayWithSensRum(_DO_NALIV);
-           if ( iRum[1] == 1) {
-          switch (iDoz) {
-            case 0:
-              vPump(ulTimePamp[igDoza]);
-              break;
-            case 1:
-              vPump(ulTimePamp[2]);
-              break;
-            case 2:
-              vPump(ulTimePamp[2]);
-              break;
+          if ( iRum[1] == 1) {
+            switch (iDoz) {
+              case 0:
+                vPump(ulTimePamp[igDoza]);
+                break;
+              case 1:
+                vPump(ulTimePamp[2]);
+                break;
+              case 2:
+                vPump(ulTimePamp[2]);
+                break;
+            }
           }
-           }
           DelayWithSensRum(_POSLE_NALIV);
           iRum[1] = 2;
         }
@@ -858,17 +904,17 @@ void vNaliv(int iDoz) {
           bPovorot(igPosDeg[2]);
           DelayWithSensRum(_DO_NALIV);
           if ( iRum[2] == 1) {
-          switch (iDoz) {
-            case 0:
-              vPump(ulTimePamp[igDoza]);
-              break;
-            case 1:
-              vPump(ulTimePamp[1]);
-              break;
-            case 2:
-              vPump(ulTimePamp[2]);
-              break;
-          }
+            switch (iDoz) {
+              case 0:
+                vPump(ulTimePamp[igDoza]);
+                break;
+              case 1:
+                vPump(ulTimePamp[1]);
+                break;
+              case 2:
+                vPump(ulTimePamp[2]);
+                break;
+            }
           }
           DelayWithSensRum(_POSLE_NALIV);
           iRum[2] = 2;
@@ -879,19 +925,19 @@ void vNaliv(int iDoz) {
         if ( iRum[3] == 1) {
           bPovorot(igPosDeg[3]);
           DelayWithSensRum(_DO_NALIV);
-           if ( iRum[3] == 1) {
-          switch (iDoz) {
-            case 0:
-              vPump(ulTimePamp[igDoza]);
-              break;
-            case 1:
-              vPump(ulTimePamp[1]);
-              break;
-            case 2:
-              vPump(ulTimePamp[1]);
-              break;
+          if ( iRum[3] == 1) {
+            switch (iDoz) {
+              case 0:
+                vPump(ulTimePamp[igDoza]);
+                break;
+              case 1:
+                vPump(ulTimePamp[1]);
+                break;
+              case 2:
+                vPump(ulTimePamp[1]);
+                break;
+            }
           }
-           }
           DelayWithSensRum(_POSLE_NALIV);
           iRum[3] = 2;
         }
@@ -902,17 +948,17 @@ void vNaliv(int iDoz) {
           bPovorot(igPosDeg[4]);
           DelayWithSensRum(_DO_NALIV);
           if ( iRum[4] == 1) {
-          switch (iDoz) {
-            case 0:
-              vPump(ulTimePamp[igDoza]);
-              break;
-            case 1:
-              vPump(ulTimePamp[0]);
-              break;
-            case 2:
-              vPump(ulTimePamp[1]);
-              break;
-          }
+            switch (iDoz) {
+              case 0:
+                vPump(ulTimePamp[igDoza]);
+                break;
+              case 1:
+                vPump(ulTimePamp[0]);
+                break;
+              case 2:
+                vPump(ulTimePamp[1]);
+                break;
+            }
           }
           DelayWithSensRum(_POSLE_NALIV);
           iRum[4] = 2;
@@ -923,19 +969,19 @@ void vNaliv(int iDoz) {
         if ( iRum[5] == 1) {
           bPovorot(igPosDeg[5]);
           DelayWithSensRum(_DO_NALIV);
-           if ( iRum[5] == 1) {
-          switch (iDoz) {
-            case 0:
-              vPump(ulTimePamp[igDoza]);
-              break;
-            case 1:
-              vPump(ulTimePamp[0]);
-              break;
-            case 2:
-              vPump(ulTimePamp[1]);
-              break;
+          if ( iRum[5] == 1) {
+            switch (iDoz) {
+              case 0:
+                vPump(ulTimePamp[igDoza]);
+                break;
+              case 1:
+                vPump(ulTimePamp[0]);
+                break;
+              case 2:
+                vPump(ulTimePamp[1]);
+                break;
+            }
           }
-           }
           DelayWithSensRum(_POSLE_NALIV);
           iRum[5] = 2;
         }
