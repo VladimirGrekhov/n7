@@ -69,6 +69,8 @@ void setup() {
 
   pinMode(PIN_SERVO_ON, OUTPUT);
   pinMode(PIN_PUMP_ON, OUTPUT);
+  pinMode(5, OUTPUT);
+  digitalWrite(5, 0);
   digitalWrite(PIN_PUMP_ON, 0);
   digitalWrite(PIN_SERVO_ON, 1);
 #if(_DEBAG_)
@@ -197,6 +199,7 @@ void vStatus() {
       if (myTimer.isReady()) {
         cascade.clear();
         fPrintChar(27 + igDoza);
+        digitalWrite(5, 1);
       }
       if ( bSensRums()) {
         myTimer.setTimeout(_LED_OFF);
@@ -226,6 +229,7 @@ void vStatus() {
         iStatus = 100;// на автоналив
       }
       if (buttEnt.isClick()) {
+        digitalWrite(5, 0);
         iStatus = 40;// на налив
         vSensRumsRefresh();
       }
