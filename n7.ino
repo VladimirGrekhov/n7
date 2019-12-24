@@ -58,12 +58,13 @@ int iUst[6] {972, 903, 755, 716, 574, 876};
 int iUstDif[6] {_FOTO_DIF_1, _FOTO_DIF_2, _FOTO_DIF_3, _FOTO_DIF_4, _FOTO_DIF_5, _FOTO_DIF_6};
 int igPosDeg[6] {0, 37, 63, 97, 129, 180};
 int iRum[6];
+int iRumRuch[6] {1, 0, 0, 0, 0, 0};
 int iRumLast[6] {1, 1, 1, 1, 1, 1};
 unsigned long ulTimePamp[3] = {100, 200, 300};
 int igDoza = 2;
 int iAutoDoza =  0;
 int iPosN;
-int iNcalibPamp;
+
 void setup() {
 
   pinMode(PIN_SERVO_ON, OUTPUT);
@@ -190,7 +191,7 @@ void vStatus() {
       buttEnt.isClick();
       myTimer.setTimeout(_LED_OFF);
       buttDn.setTimeout(_TIME_OUT_R);        // настройка таймаута на удержание (по умолчанию 500 мс)
-       bPovorot(igPosDeg[0]);
+      bPovorot(igPosDeg[0]);
       break;
     case 21://
       if (myTimer.isReady()) {
@@ -237,7 +238,7 @@ void vStatus() {
       buttEnt.isClick();
       vSensRumsRefresh();
       buttDn.setTimeout(_TIME_OUT_R);        // настройка таймаута на удержание (по умолчанию 500 мс)
-       bPovorot(igPosDeg[0]);
+      bPovorot(igPosDeg[0]);
       break;
     case 31://----------------------------------------------------------------------31  калибровка фтотодатчиков
       bSensRums();
@@ -281,7 +282,7 @@ void vStatus() {
       cascade[1].clear();
       iPosN = 0;
       cascade[1].on(1, (iPosN + 1)); // зеленый
-       bPovorot(igPosDeg[0]);
+      bPovorot(igPosDeg[0]);
       break;
     case 51:// -----------------------------------------------------------51 калиб. серво
       vCalibServo();
@@ -304,8 +305,8 @@ void vStatus() {
       buttDn.isClick();
       buttEnt.isClick();
       vSensRumsRefresh();
-      iNcalibPamp = 0;
-       bPovorot(igPosDeg[0]);
+      iPosN = 0;
+      bPovorot(igPosDeg[0]);
       break;
     case 61://Калибровка насоса
       vPumpCalib();
@@ -319,18 +320,18 @@ void vStatus() {
       }
       break;
     case 70://************************************************************** 70 Промывка
-    vSensRumsRefresh();
+      vSensRumsRefresh();
       vPrintCapBat();
       iStatus = 71;
       buttDn.isHolded();
       buttDn.isClick();
       buttUp.isClick();
-       buttUp.isHolded();
+      buttUp.isHolded();
       myTimer.setTimeout(5000);   // настроить таймаут
       buttDn.setTimeout(3000);        // настройка таймаута на удержание (по умолчанию 500 мс)
       break;
     case 71://Промывка
-     bSensRums();
+      bSensRums();
       iStatus = DelayWithSensRum(iStatus, 20);
       if (buttUp.isClick() or buttUp.isHolded()) {
         iStatus = 20;// на рюмку
@@ -342,8 +343,8 @@ void vStatus() {
       }
       if (buttEnt.state()) {
         if ( iRum[0] != 0) {
-        digitalWrite(PIN_PUMP_ON, 1);
-        iRum[0] = 2;
+          digitalWrite(PIN_PUMP_ON, 1);
+          iRum[0] = 2;
         }
         myTimer.setTimeout(5000);   // настроить таймаут
       } else digitalWrite(PIN_PUMP_ON, 0);
@@ -380,7 +381,7 @@ void vStatus() {
     case 91://*****************************************************************91 Световые эфекты
       int iNumEf ;
       if (buttDn.isHolded()) {
-        iStatus = 120;
+        iStatus = 130;
       }
       if (buttUp.isHolded()) {
         iStatus = 20;
@@ -485,7 +486,9 @@ void vStatus() {
       }
       break;
     case 120://**************************************************************** ручной налив
-      fPrintChar(32);// а
+      vRuchLeds();
+      bPovorot(igPosDeg[0]);
+      fPrintChar(32 + igDoza);// а
       iStatus = 121;
       buttEnt.isClick();
       buttUp.isClick();
@@ -493,17 +496,54 @@ void vStatus() {
       buttDn.isClick();
       buttDn.isHolded();
       buttUp.isHolded();
+      vRuchLeds();
       break;
     case 121://**************************************************************** ручной налив
-      //   vRuchRum();
+       if (buttEnt.isClick() ) {
+        vNalivR(0);
+       }
+       
+      if (buttUp.isClick() ) {
+
+        if (igDoza < 2) {
+          igDoza++;
+        }
+        fPrintChar(igDoza + 32);
+      }
+      if (buttDn.isClick()  ) {
+        if (igDoza > 0) {
+          igDoza--;
+        }
+        fPrintChar(igDoza + 32);
+      }
       if (buttDn.isHolded()) {
         iStatus = 110;
+      }
+      if (buttUp.isHolded()) {
+        iStatus = 130;
+      }
+      break;
+    case 130://**************************************************************** ручная калибровка
+      vRuchLeds();
+      buttEnt.isClick();
+      buttUp.isClick();
+      buttDn.isClick();
+      buttDn.isHolded();
+      buttUp.isHolded();
+      fPrintChar(21);// а
+      iStatus = 131;
+      iRumRuch[0];
+      iPosN = 0;
+      break;
+    case 131://**************************************************************** ручная калибровка
+      vRuchRum();
+      if (buttDn.isHolded()) {
+        iStatus = 120;
       }
       if (buttUp.isHolded()) {
         iStatus = 90;
       }
       break;
-
   }//switch (iStatus)
 }//void vStatus()
 void fPrintChar(int iNumChar) {
@@ -688,7 +728,7 @@ void vGetFotoSensR() {
   EEPROM.get(45, iUstDif[3]);
   EEPROM.get(47, iUstDif[4]);
   EEPROM.get(49, iUstDif[5]);
-  #if(_DEBAG_)
+#if(_DEBAG_)
   Serial.println("Диф");
   Serial.println( iUstDif[0]);
   Serial.println( iUstDif[1]);
@@ -696,7 +736,7 @@ void vGetFotoSensR() {
   Serial.println( iUstDif[3]);
   Serial.println( iUstDif[4]);
   Serial.println( iUstDif[5]);
-  #endif
+#endif
 }
 void vCalibServo() {
 
@@ -749,12 +789,12 @@ void vPumpCalib() {
   static int iDoza;
   vSensRumsRefresh();
   if (buttUp.isClick()) {
-    if (iNcalibPamp < 6) {
-      iNcalibPamp++;
+    if (iPosN < 6) {
+      iPosN++;
       cascade[0].setRow(7, 0);
-      cascade[0].on(7, iNcalibPamp);
+      cascade[0].on(7, iPosN);
     }
-    switch (iNcalibPamp) {
+    switch (iPosN) {
       case 0:
         bPovorot(igPosDeg[0]);
         break;
@@ -794,12 +834,12 @@ void vPumpCalib() {
     ulTimeNaliv = 0;
   }
   if (buttDn.isClick()) {
-    if (iNcalibPamp > 0) {
-      iNcalibPamp--;
+    if (iPosN > 0) {
+      iPosN--;
       cascade[0].setRow(7, 0);
-      cascade[0].on(7, iNcalibPamp);
+      cascade[0].on(7, iPosN);
     }
-    switch (iNcalibPamp) {
+    switch (iPosN) {
       case 0:
         bPovorot(igPosDeg[0]);
         break;
@@ -820,14 +860,14 @@ void vPumpCalib() {
         break;
     }
   }
-  if (buttEnt.state() and (iNcalibPamp == 0 or iNcalibPamp == 2 or iNcalibPamp == 4 )) {
- if ( iRum[iNcalibPamp] == 1) {
-    if (!bTrigStart) {
-      bTrigStart = 1;
-      ulStartTime = millis();
-      digitalWrite(PIN_PUMP_ON, 1);
+  if (buttEnt.state() and (iPosN == 0 or iPosN == 2 or iPosN == 4 )) {
+    if ( iRum[iPosN] == 1) {
+      if (!bTrigStart) {
+        bTrigStart = 1;
+        ulStartTime = millis();
+        digitalWrite(PIN_PUMP_ON, 1);
+      }
     }
- }
   } else {
     digitalWrite(PIN_PUMP_ON, 0);
     if (bTrigStart) {
@@ -843,8 +883,8 @@ void vPumpCalib() {
     }
   }
   if (buttEnt.isClick() ) {
-    if (iNcalibPamp == 1 or iNcalibPamp == 3 or iNcalibPamp == 5 ) {
-      switch (iNcalibPamp) {
+    if (iPosN == 1 or iPosN == 3 or iPosN == 5 ) {
+      switch (iPosN) {
         case 1:
           iDoza = 0;
           break;
@@ -855,12 +895,12 @@ void vPumpCalib() {
           iDoza = 2;
           break;
       }// end switch
-      if ( iRum[iNcalibPamp] == 1) {
-      vPump(ulTimePamp[iDoza]);
-      iRum[iNcalibPamp] = 2;
+      if ( iRum[iPosN] == 1) {
+        vPump(ulTimePamp[iDoza]);
+        iRum[iPosN] = 2;
       }
     }
-    if (iNcalibPamp == 6 ) {
+    if (iPosN == 6 ) {
       vSaveTimePomp();
       cascade[0].setRow(7, 0);
     }
@@ -1328,29 +1368,199 @@ void vLedEfSel(int iSel) {
   }
 }
 void vRuchRum() {
-  static  int iRuchPos;
-  if (buttUp.isClick() ) {
-    if (iRuchPos < 5) {
-      iRuchPos++;
+  if (buttEnt.isClick() ) {
+    if ( iRumRuch[iPosN] == 1) {
+      iRumRuch[iPosN] = 0;
+      cascade[1].on(0, iPosN + 1 ); //красный
+      cascade[1].off(1, iPosN + 1);//зеленый
+      cascade[1].off(2, iPosN + 1);// синий
+    } else {
+      iRumRuch[iPosN] = 1;
+      cascade[1].off(0, iPosN + 1 ); //красный
+      cascade[1].on(1, iPosN + 1);//зеленый
+      cascade[1].off(2, iPosN + 1);// синий
     }
   }
-  if (buttDn.isClick()  ) {
+  iRumRuch[iPosN];
+  if (buttDn.isClick() ) {
+    if (iPosN < 5) {
+      iPosN++;
+    }
+  }
+  if (buttUp.isClick()  ) {
 
-    if (iRuchPos > 0) {
-      iRuchPos--;
+    if (iPosN > 0) {
+      iPosN--;
     }
   }
-  servo.tick();
-  bPovorot(igPosDeg[iRuchPos]);
+
+  bPovorot(igPosDeg[iPosN]);
 }
-void vTuneFotosensR(){
- iUstDif[0] = (iUst[0] -  analogRead(1))/4;
-  iUstDif[1] =  (iUst[1] -  analogRead(2))/4;
-  iUstDif[2] =  (iUst[2] -  analogRead(3))/4;
-  iUstDif[3] =  (iUst[3] -  analogRead(4))/4;
-  iUstDif[4] =  (iUst[4] -  analogRead(5))/4;
-  iUstDif[5] =  (iUst[5] -  analogRead(6))/4;
-  #if(_DEBAG_)
+void vRuchLeds() {
+  for (int iPosFor = 0; iPosFor < 6; iPosFor++) {
+    if ( iRumRuch[iPosFor] == 0) {
+      cascade[1].on(0, iPosFor + 1 ); //красный
+      cascade[1].off(1, iPosFor + 1);//зеленый
+      cascade[1].off(2, iPosFor + 1);// синий
+    } else {
+      cascade[1].off(0, iPosFor + 1 ); //красный
+      cascade[1].on(1, iPosFor + 1);//зеленый
+      cascade[1].off(2, iPosFor + 1);// синий
+    }
+  }
+} void vNalivR(int iDoz) {
+  int iPosNaliv = 0;
+  while (iPosNaliv < 100) {
+    bSensRums();
+    switch (iPosNaliv) {
+      case 0:
+        iPosNaliv = 10;
+        break;
+      case 10:
+        if ( iRumRuch[0] == 1) {
+          bPovorot(igPosDeg[0]);
+          //          DelayWithSensRum(_DO_NALIV);
+          switch (iDoz) {
+            case 0:
+              vPump(ulTimePamp[igDoza]);
+              break;
+            case 1:
+              vPump(ulTimePamp[2]);
+              break;
+            case 2:
+              vPump(ulTimePamp[2]);
+              break;
+          }
+          DelayWithSensRum(_POSLE_NALIV);
+          //   iRumRuch[0] = 2;
+        }
+        iPosNaliv = 20;
+        break;
+      case 20:
+        if ( iRumRuch[1] == 1) {
+          bPovorot(igPosDeg[1]);
+          DelayWithSensRum(_DO_NALIV);
+          if ( iRumRuch[1] == 1) {
+            switch (iDoz) {
+              case 0:
+                vPump(ulTimePamp[igDoza]);
+                break;
+              case 1:
+                vPump(ulTimePamp[2]);
+                break;
+              case 2:
+                vPump(ulTimePamp[2]);
+                break;
+            }
+          }
+          DelayWithSensRum(_POSLE_NALIV);
+          //          iRumRuch[1] = 2;
+        }
+        iPosNaliv = 30;
+        break;
+      case 30:
+        if ( iRumRuch[2] == 1) {
+          bPovorot(igPosDeg[2]);
+          DelayWithSensRum(_DO_NALIV);
+          if ( iRumRuch[2] == 1) {
+            switch (iDoz) {
+              case 0:
+                vPump(ulTimePamp[igDoza]);
+                break;
+              case 1:
+                vPump(ulTimePamp[1]);
+                break;
+              case 2:
+                vPump(ulTimePamp[2]);
+                break;
+            }
+          }
+          DelayWithSensRum(_POSLE_NALIV);
+          //         iRumRuch[2] = 2;
+        }
+        iPosNaliv = 40;
+        break;
+      case 40:
+        if ( iRumRuch[3] == 1) {
+          bPovorot(igPosDeg[3]);
+          DelayWithSensRum(_DO_NALIV);
+          if ( iRumRuch[3] == 1) {
+            switch (iDoz) {
+              case 0:
+                vPump(ulTimePamp[igDoza]);
+                break;
+              case 1:
+                vPump(ulTimePamp[1]);
+                break;
+              case 2:
+                vPump(ulTimePamp[1]);
+                break;
+            }
+          }
+          DelayWithSensRum(_POSLE_NALIV);
+          //         iRumRuch[3] = 2;
+        }
+        iPosNaliv = 50;
+        break;
+      case 50:
+        if ( iRumRuch[4] == 1) {
+          bPovorot(igPosDeg[4]);
+          DelayWithSensRum(_DO_NALIV);
+          if ( iRumRuch[4] == 1) {
+            switch (iDoz) {
+              case 0:
+                vPump(ulTimePamp[igDoza]);
+                break;
+              case 1:
+                vPump(ulTimePamp[0]);
+                break;
+              case 2:
+                vPump(ulTimePamp[1]);
+                break;
+            }
+          }
+          DelayWithSensRum(_POSLE_NALIV);
+          //          iRumRuch[4] = 2;
+        }
+        iPosNaliv = 60;
+        break;
+      case 60:
+        if ( iRumRuch[5] == 1) {
+          bPovorot(igPosDeg[5]);
+          DelayWithSensRum(_DO_NALIV);
+          if ( iRumRuch[5] == 1) {
+            switch (iDoz) {
+              case 0:
+                vPump(ulTimePamp[igDoza]);
+                break;
+              case 1:
+                vPump(ulTimePamp[0]);
+                break;
+              case 2:
+                vPump(ulTimePamp[1]);
+                break;
+            }
+          }
+          DelayWithSensRum(_POSLE_NALIV);
+          //          iRumRuch[5] = 2;
+        }
+        iPosNaliv = 70;
+        break;
+      case 70:
+        bPovorot(igPosDeg[0]);
+        iPosNaliv = 100;
+        break;
+    }
+  }
+}
+void vTuneFotosensR() {
+  iUstDif[0] = (iUst[0] -  analogRead(1)) / 4;
+  iUstDif[1] =  (iUst[1] -  analogRead(2)) / 4;
+  iUstDif[2] =  (iUst[2] -  analogRead(3)) / 4;
+  iUstDif[3] =  (iUst[3] -  analogRead(4)) / 4;
+  iUstDif[4] =  (iUst[4] -  analogRead(5)) / 4;
+  iUstDif[5] =  (iUst[5] -  analogRead(6)) / 4;
+#if(_DEBAG_)
   Serial.println( iUstDif[0]);
   Serial.println( iUstDif[1]);
   Serial.println( iUstDif[2]);
