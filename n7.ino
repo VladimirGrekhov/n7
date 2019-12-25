@@ -19,6 +19,8 @@
 #define _DO_NALIV 100 //задержка до налива мс
 #define _POSLE_NALIV 200 //задержка после налива мс
 #define _LED_OFF 15000 //задержка на отключение светодиодов
+#define _POW_OFF 15000 //задержка на отключение светодиодов
+
 
 #define _ARDUINO_PIT 5.01 //5.01 ножка питания ардуино
 #define BTN_ENT_PIN 2// пин кнопки ввод
@@ -64,6 +66,7 @@ unsigned long ulTimePamp[3] = {100, 200, 300};
 int igDoza = 2;
 int iAutoDoza =  0;
 int iPosN;
+int iLastStatus = 20;
 
 void setup() {
 
@@ -96,6 +99,14 @@ void setup() {
   } else {
 #if(_DEBAG_)
     Serial.println("eep Diff !");
+#endif
+  }
+   EEPROM.get(54, iTemp);
+  if (iTemp == 77) {
+    EEPROM.get(52, iLastStatus);
+  } else {
+#if(_DEBAG_)
+    Serial.println("eep Stat !");
 #endif
   }
 
@@ -181,7 +192,7 @@ void vStatus() {
       break;
     case 10:
       if (vLedEf2(LedData2, 0)) {
-        iStatus = 20;
+        iStatus = iLastStatus;
       }
       break;
     case 20://*************************************************************** 20 РЮМКА (Доза)
@@ -197,9 +208,8 @@ void vStatus() {
       break;
     case 21://
       if (myTimer.isReady()) {
-        cascade.clear();
-        fPrintChar(27 + igDoza);
-        digitalWrite(5, 1);
+        iStatus = 140;// на сон
+        iLastStatus = 20;
       }
       if ( bSensRums()) {
         myTimer.setTimeout(_LED_OFF);
@@ -400,7 +410,7 @@ void vStatus() {
       fPrintChar(igDoza + 24);// а
       iStatus = 101;
       vSensRumsRefresh();
-      myTimer.stop();
+     myTimer.setTimeout(_LED_OFF);
       buttEnt.isClick();
       buttUp.isClick();
       buttDn.isClick();
@@ -408,15 +418,15 @@ void vStatus() {
       buttDn.isHolded();
       buttUp.isHolded();
       break;
-    case 101:// автоналив
+    case 101://***************************************************************************** автоналив
+    if (myTimer.isReady()) {
+        iStatus = 140;// на сон
+        iLastStatus = 100;
+      }
       if (bSensRums()) {
-        myTimer.setTimeout(3000);   // настроить таймаут
+          iStatus = 102;
       }
-      if (myTimer.isReady()) {
-        vPrintCapBat();
-        vNaliv(0);
-        fPrintChar(igDoza + 24);// а
-      }
+     
       if (buttEnt.isClick() ) {
         vPrintCapBat();
         vNaliv(0);
@@ -442,6 +452,20 @@ void vStatus() {
       }
       if (buttUp.isHolded()) {
         iStatus = 110;
+      }
+      break;
+       case 102:
+        myTimer.setTimeout(3000); 
+         iStatus = 103;
+      break;
+       case 103:
+       if (bSensRums()) {
+         myTimer.setTimeout(3000); 
+      }
+        if (myTimer.isReady()) {
+        vPrintCapBat();
+        vNaliv(0);
+        iStatus = 100;
       }
       break;
     case 110://**************************************************************** 2 - 3 дозы
@@ -503,10 +527,10 @@ void vStatus() {
       vRuchLeds();
       break;
     case 121://**************************************************************** ручной налив
-       if (buttEnt.isClick() ) {
+      if (buttEnt.isClick() ) {
         vNalivR(0);
-       }
-       
+      }
+
       if (buttUp.isClick() ) {
 
         if (igDoza < 2) {
@@ -546,6 +570,31 @@ void vStatus() {
       }
       if (buttUp.isHolded()) {
         iStatus = 90;
+      }
+      break;
+    case 140://**************************************************************** sleep
+      myTimer.setTimeout(_POW_OFF);
+      cascade.clear();
+      fPrintChar(27 + igDoza);
+      iStatus = 141;
+      break;
+    case 141://**************************************************************** sleep
+      if (myTimer.isReady()) {
+         EEPROM.put(52, iLastStatus);
+          EEPROM.put(54, 77);
+        digitalWrite(5, 1);
+      }
+      if ( bSensRums()) {
+        iStatus = iLastStatus;
+      }
+      if (buttEnt.isClick() ) {
+        iStatus = iLastStatus;
+      }
+      if (buttDn.isClick() ) {
+        iStatus = iLastStatus;
+      }
+      if (buttUp.isClick() ) {
+        iStatus = iLastStatus;
       }
       break;
   }//switch (iStatus)
