@@ -67,6 +67,8 @@ int igDoza = 2;
 int iAutoDoza =  0;
 int iPosN;
 int iLastStatus = 20;
+ byte byTemp;
+ byte byTemp1;
 
 void setup() {
 
@@ -83,26 +85,26 @@ void setup() {
 #if(_DEBAG_)
   Serial.println("D_E_B_A_G");
 #endif
-  byte iTemp;
+ 
 
-  EEPROM.get(12, iTemp);
-  if (iTemp == 77) {
+  EEPROM.get(12, byTemp);
+  if (byTemp == 77) {
     vGetFotoSens();
   } else {
 #if(_DEBAG_)
     Serial.println("eep Foto !");
 #endif
   }
-  EEPROM.get(51, iTemp);
-  if (iTemp == 77) {
+  EEPROM.get(51, byTemp);
+  if (byTemp == 77) {
     vGetFotoSensR();
   } else {
 #if(_DEBAG_)
     Serial.println("eep Diff !");
 #endif
   }
-   EEPROM.get(54, iTemp);
-  if (iTemp == 77) {
+  EEPROM.get(54, byTemp);
+  if (byTemp == 77) {
     EEPROM.get(52, iLastStatus);
   } else {
 #if(_DEBAG_)
@@ -110,8 +112,8 @@ void setup() {
 #endif
   }
 
-  EEPROM.get(25, iTemp);
-  if (iTemp == 77) {
+  EEPROM.get(25, byTemp);
+  if (byTemp == 77) {
     vGetServoPos();
   } else {
 #if(_DEBAG_)
@@ -119,8 +121,8 @@ void setup() {
 #endif
   }
 
-  EEPROM.get(38, iTemp);
-  if (iTemp == 77) {
+  EEPROM.get(38, byTemp);
+  if (byTemp == 77) {
     vGetTimePomp();
   } else {
 #if(_DEBAG_)
@@ -184,11 +186,19 @@ void vStatus() {
   static int iStatus;
   switch (iStatus) {
     case 0:
-      cascade.clear();
+     if (buttEnt.state()) {
+        iStatus = 9;
+       }else iStatus = 80;
+      
+       break;
+      case 9:
+      digitalWrite(5, 0);
+       cascade.clear();
       vLedEf2(LedData2, 1);
       delay(1);
       vPrintCapBat();
       iStatus = 10;
+       break;
       break;
     case 10:
       if (vLedEf2(LedData2, 0)) {
@@ -367,22 +377,40 @@ void vStatus() {
       cascade.clear();
       iStatus = 81;
       vPrintCapBat();//   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      myTimer.setTimeout(5000);   // настроить таймаут
-      buttEnt.isHolded();
-      buttDn.setTimeout(3000);        // настройка таймаута на удержание (по умолчанию 500 мс)
-      buttUp.isClick();
+      digitalWrite(5, 1);
+       myTimer.setInterval(300);
+       byTemp = 0;
+       byTemp1 = 0;
+     
       break;
-    case 81://
+    case 81://Зарядка ******************************************************* 81 Зарядка
 
-      if (buttDn.isHolded()) {
-        myTimer.setTimeout(5000);   // настроить таймаут
-        iStatus = 30;// на калибровку фототдатчиков
-      }
-      if (buttUp.isClick()) {
-        myTimer.setTimeout(5000);   // настроить таймаут
-        iStatus = 70;//
-      }
-      iStatus = DelayWithSensRum(iStatus, 20);
+       if (buttEnt.state()) {
+        iStatus = 9;
+       }
+if (myTimer.isReady() ){
+          byTemp ++;
+          if (byTemp == 1){
+           cascade[0].setRow(0, B10111101);
+          }
+          if (byTemp == 2){
+            cascade[0].setRow(0, B00111100);
+          }
+          if (byTemp > 2){
+            byTemp = 0;
+             byTemp1++;
+          }
+          if (byTemp1 == 9){  
+      digitalWrite(5, 0); 
+          }
+          if (byTemp1 > 10){
+            byTemp1 = 0;
+            vPrintCapBat();//   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      digitalWrite(5, 1); 
+          }
+          
+        }
+      
       break;
     case 90://****************************************************************90 Световые эфекты
       buttUp.isClick();
@@ -410,7 +438,7 @@ void vStatus() {
       fPrintChar(igDoza + 24);// а
       iStatus = 101;
       vSensRumsRefresh();
-     myTimer.setTimeout(_LED_OFF);
+      myTimer.setTimeout(_LED_OFF);
       buttEnt.isClick();
       buttUp.isClick();
       buttDn.isClick();
@@ -419,14 +447,14 @@ void vStatus() {
       buttUp.isHolded();
       break;
     case 101://***************************************************************************** автоналив
-    if (myTimer.isReady()) {
-        iStatus = 140;// на сон
+      if (myTimer.isReady()) {
         iLastStatus = 100;
+        iStatus = 140;// на сон
       }
       if (bSensRums()) {
-          iStatus = 102;
+        iStatus = 102;
       }
-     
+
       if (buttEnt.isClick() ) {
         vPrintCapBat();
         vNaliv(0);
@@ -454,15 +482,11 @@ void vStatus() {
         iStatus = 110;
       }
       break;
-       case 102:
-        myTimer.setTimeout(3000); 
-         iStatus = 103;
-      break;
-       case 103:
-       if (bSensRums()) {
-         myTimer.setTimeout(3000); 
+    case 102:
+      if (bSensRums()) {
+        myTimer.setTimeout(3000);
       }
-        if (myTimer.isReady()) {
+      if (myTimer.isReady()) {
         vPrintCapBat();
         vNaliv(0);
         iStatus = 100;
@@ -580,9 +604,9 @@ void vStatus() {
       break;
     case 141://**************************************************************** sleep
       if (myTimer.isReady()) {
-         EEPROM.put(52, iLastStatus);
-          EEPROM.put(54, 77);
-        digitalWrite(5, 1);
+        EEPROM.put(52, iLastStatus);
+        EEPROM.put(54, 77);
+       iStatus = 80;
       }
       if ( bSensRums()) {
         iStatus = iLastStatus;
