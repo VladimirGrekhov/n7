@@ -58,17 +58,18 @@ ServoSmooth servo;
 
 int iUst[6] {972, 903, 755, 716, 574, 876};
 int iUstDif[6] {_FOTO_DIF_1, _FOTO_DIF_2, _FOTO_DIF_3, _FOTO_DIF_4, _FOTO_DIF_5, _FOTO_DIF_6};
-int igPosDeg[6] {0, 37, 63, 97, 129, 180};
-int iRum[6];
-int iRumRuch[6] {1, 0, 0, 0, 0, 0};
-int iRumLast[6] {1, 1, 1, 1, 1, 1};
+byte igPosDeg[6] {0, 37, 63, 97, 129, 180};
+byte iRum[6];
+byte iRumRuch[6] {1, 0, 0, 0, 0, 0};
+byte iRumLast[6] {1, 1, 1, 1, 1, 1};
 unsigned long ulTimePamp[3] = {100, 200, 300};
-int igDoza = 2;
-int iAutoDoza =  0;
-int iPosN;
-int iLastStatus = 20;
- byte byTemp;
- byte byTemp1;
+byte igDoza = 2;
+byte iAutoDoza =  0;
+byte iPosN;
+byte iLastStatus = 20;
+byte iStatus;
+byte byTemp;
+byte byTemp1;
 
 void setup() {
 
@@ -85,7 +86,7 @@ void setup() {
 #if(_DEBAG_)
   Serial.println("D_E_B_A_G");
 #endif
- 
+
 
   EEPROM.get(12, byTemp);
   if (byTemp == 77) {
@@ -93,6 +94,22 @@ void setup() {
   } else {
 #if(_DEBAG_)
     Serial.println("eep Foto !");
+#endif
+  }
+  EEPROM.get(25, byTemp);
+  if (byTemp == 77) {
+    vGetServoPos();
+  } else {
+#if(_DEBAG_)
+    Serial.println("eep servo !");
+#endif
+  }
+  EEPROM.get(38, byTemp);
+  if (byTemp == 77) {
+    vGetTimePomp();
+  } else {
+#if(_DEBAG_)
+    Serial.println("eep Pump !");
 #endif
   }
   EEPROM.get(51, byTemp);
@@ -106,27 +123,11 @@ void setup() {
   EEPROM.get(54, byTemp);
   if (byTemp == 77) {
     EEPROM.get(52, iLastStatus);
+        EEPROM.get(60, igDoza);
+        vGetiRum();
   } else {
 #if(_DEBAG_)
     Serial.println("eep Stat !");
-#endif
-  }
-
-  EEPROM.get(25, byTemp);
-  if (byTemp == 77) {
-    vGetServoPos();
-  } else {
-#if(_DEBAG_)
-    Serial.println("eep servo !");
-#endif
-  }
-
-  EEPROM.get(38, byTemp);
-  if (byTemp == 77) {
-    vGetTimePomp();
-  } else {
-#if(_DEBAG_)
-    Serial.println("eep Pump !");
 #endif
   }
   cascade[0].setIntensity(0);//яркость матрицы
@@ -183,22 +184,22 @@ void loop() {
   //  vTestServo2();
 }
 void vStatus() {
-  static int iStatus;
+
   switch (iStatus) {
     case 0:
-     if (buttEnt.state()) {
+      if (buttEnt.state()) {
         iStatus = 9;
-       }else iStatus = 80;
-      
-       break;
-      case 9:
+      } else iStatus = 80;
+
+      break;
+    case 9:
       digitalWrite(5, 0);
-       cascade.clear();
+      cascade.clear();
       vLedEf2(LedData2, 1);
       delay(1);
       vPrintCapBat();
       iStatus = 10;
-       break;
+      break;
       break;
     case 10:
       if (vLedEf2(LedData2, 0)) {
@@ -378,39 +379,39 @@ void vStatus() {
       iStatus = 81;
       vPrintCapBat();//   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       digitalWrite(5, 1);
-       myTimer.setInterval(300);
-       byTemp = 0;
-       byTemp1 = 0;
-     
+      myTimer.setInterval(300);
+      byTemp = 0;
+      byTemp1 = 0;
+
       break;
     case 81://Зарядка ******************************************************* 81 Зарядка
 
-       if (buttEnt.state()) {
+      if (buttEnt.state()) {
         iStatus = 9;
-       }
-if (myTimer.isReady() ){
-          byTemp ++;
-          if (byTemp == 1){
-           cascade[0].setRow(0, B10111101);
-          }
-          if (byTemp == 2){
-            cascade[0].setRow(0, B00111100);
-          }
-          if (byTemp > 2){
-            byTemp = 0;
-             byTemp1++;
-          }
-          if (byTemp1 == 9){  
-      digitalWrite(5, 0); 
-          }
-          if (byTemp1 > 10){
-            byTemp1 = 0;
-            vPrintCapBat();//   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      digitalWrite(5, 1); 
-          }
-          
+      }
+      if (myTimer.isReady() ) {
+        byTemp ++;
+        if (byTemp == 1) {
+          cascade[0].setRow(0, B10111101);
         }
-      
+        if (byTemp == 2) {
+          cascade[0].setRow(0, B00111100);
+        }
+        if (byTemp > 2) {
+          byTemp = 0;
+          byTemp1++;
+        }
+        if (byTemp1 == 9) {
+          digitalWrite(5, 0);
+        }
+        if (byTemp1 > 10) {
+          byTemp1 = 0;
+          vPrintCapBat();//   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          digitalWrite(5, 1);
+        }
+
+      }
+
       break;
     case 90://****************************************************************90 Световые эфекты
       buttUp.isClick();
@@ -604,9 +605,11 @@ if (myTimer.isReady() ){
       break;
     case 141://**************************************************************** sleep
       if (myTimer.isReady()) {
-        EEPROM.put(52, iLastStatus);
-        EEPROM.put(54, 77);
-       iStatus = 80;
+        EEPROM.update(52, iLastStatus);
+        EEPROM.update(54, 77);
+        EEPROM.update(60, igDoza);
+        vSaveiRum();
+        iStatus = 80;
       }
       if ( bSensRums()) {
         iStatus = iLastStatus;
@@ -720,37 +723,53 @@ void vSensRumsRefresh() {
 
 }//bSensRums()
 void vSaveFotoSens() {
-  EEPROM.put(0, iUst[0]);
-  EEPROM.put(2, iUst[1]);
-  EEPROM.put(4, iUst[2]);
-  EEPROM.put(6, iUst[3]);
-  EEPROM.put(8, iUst[4]);
-  EEPROM.put(10, iUst[5]);
-  EEPROM.put(12, 77);
+  EEPROM.update(0, iUst[0]);
+  EEPROM.update(2, iUst[1]);
+  EEPROM.update(4, iUst[2]);
+  EEPROM.update(6, iUst[3]);
+  EEPROM.update(8, iUst[4]);
+  EEPROM.update(10, iUst[5]);
+  EEPROM.update(12, 77);
 }
 void vSaveServoPos() {
-  EEPROM.put(13, igPosDeg[0]);
-  EEPROM.put(15, igPosDeg[1]);
-  EEPROM.put(17, igPosDeg[2]);
-  EEPROM.put(19, igPosDeg[3]);
-  EEPROM.put(21, igPosDeg[4]);
-  EEPROM.put(23, igPosDeg[5]);
-  EEPROM.put(25, 77);
+  EEPROM.update(13, igPosDeg[0]);
+  EEPROM.update(15, igPosDeg[1]);
+  EEPROM.update(17, igPosDeg[2]);
+  EEPROM.update(19, igPosDeg[3]);
+  EEPROM.update(21, igPosDeg[4]);
+  EEPROM.update(23, igPosDeg[5]);
+  EEPROM.update(25, 77);
 }
 void vSaveTimePomp() {
-  EEPROM.put(26, ulTimePamp[0]);
-  EEPROM.put(30, ulTimePamp[1]);
-  EEPROM.put(34, ulTimePamp[2]);
-  EEPROM.put(38, 77);
+  EEPROM.update(26, ulTimePamp[0]);
+  EEPROM.update(30, ulTimePamp[1]);
+  EEPROM.update(34, ulTimePamp[2]);
+  EEPROM.update(38, 77);
 }
 void vSaveFotoSensR() {
-  EEPROM.put(39, iUstDif[0]);
-  EEPROM.put(41, iUstDif[1]);
-  EEPROM.put(43, iUstDif[2]);
-  EEPROM.put(45, iUstDif[3]);
-  EEPROM.put(47, iUstDif[4]);
-  EEPROM.put(49, iUstDif[5]);
-  EEPROM.put(51, 77);
+  EEPROM.update(39, iUstDif[0]);
+  EEPROM.update(41, iUstDif[1]);
+  EEPROM.update(43, iUstDif[2]);
+  EEPROM.update(45, iUstDif[3]);
+  EEPROM.update(47, iUstDif[4]);
+  EEPROM.update(49, iUstDif[5]);
+  EEPROM.update(51, 77);
+}
+void vSaveiRum() {
+  EEPROM.update(61, iRum[0]);
+  EEPROM.update(61, iRum[1]);
+  EEPROM.update(61, iRum[2]);
+  EEPROM.update(61, iRum[3]);
+  EEPROM.update(61, iRum[4]);
+  EEPROM.update(61, iRum[5]);
+}
+void vGetiRum() {
+  EEPROM.get(61, iRum[0]);
+  EEPROM.get(61, iRum[1]);
+  EEPROM.get(61, iRum[2]);
+  EEPROM.get(61, iRum[3]);
+  EEPROM.get(61, iRum[4]);
+  EEPROM.get(61, iRum[5]);
 }
 void vGetTimePomp() {
   EEPROM.get(26, ulTimePamp[0]);
