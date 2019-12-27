@@ -1,8 +1,8 @@
 //08 12 2019 - 27
-#define _DEBAG_ 1 // !!!
+#define _DEBAG_ 0 // !!!
 #define _UGOL_ 0
 #define _PRINT_BAT_ 0
-#define _LED13_ 1
+#define _LED13_ 0
 
 
 
@@ -256,8 +256,8 @@ void loop() {
       }
       if ( bSensRums()) {
         myTimer.setTimeout(_LED_OFF);
-        #if(_DEBAG_)
-      Serial.println("Движение");
+#if(_DEBAG_)
+        Serial.println("Движение");
 #endif
       }
       if (buttUp.isClick() ) {
@@ -476,24 +476,42 @@ void loop() {
     case 100://**************************************************************** автоналив
       fPrintChar(bygDoza + 24);// а
       vSensRumsRefresh();
-      myTimer.setTimeout(_LED_OFF_A);
       buttEnt.isClick();
       buttUp.isClick();
       buttDn.isClick();
       buttDn.isClick();
       buttDn.isHolded();
       buttUp.isHolded();
+      bygTemp = 0;
       bygStatus = 101;
+       myTimer.stop();
       break;
     case 101://***************************************************************************** автоналив
 
       if (bSensRums()) {
-        myTimer.setTimeout(3000);   // настроить таймаут
+        if( (bygRum[0] == 1) || (bygRum[1] == 1) || (bygRum[2] == 1) || (bygRum[3] == 1) || (bygRum[4] == 1) || (bygRum[5] == 1)){
+           myTimer.setTimeout(300);   // настроить таймаут
+        }else {
+          myTimer.stop();
+           fPrintChar(bygDoza + 24);// а
+        }
+        bygTemp = 0;
       }
       if (myTimer.isReady()) {
-        vPrintCapBat();
-        vNaliv(bygDoza + 1);
-        fPrintChar(30 + bygAutoDoza);// а
+        fPrintChar(bygTemp);
+        bygTemp++;
+         if( (bygRum[0] == 1) || (bygRum[1] == 1) || (bygRum[2] == 1) || (bygRum[3] == 1) || (bygRum[4] == 1) || (bygRum[5] == 1)){
+           myTimer.setTimeout(300);   // настроить таймаут
+        }else {
+          myTimer.stop();
+          bygTemp = 0;
+           fPrintChar(bygDoza + 24);// а
+        }
+        if (bygTemp > 10) {
+          bygStatus = 102;
+          myTimer.stop();
+          
+        }
       }
 
       if (buttEnt.isClick() ) {
@@ -522,6 +540,11 @@ void loop() {
       if (buttUp.isHolded()) {
         bygStatus = 110;
       }
+      break;
+    case 102:
+      vPrintCapBat();
+      vNaliv(0);
+      bygStatus = 100;
       break;
     case 110://**************************************************************** 2 - 3 дозы
       fPrintChar(30 + bygAutoDoza);
