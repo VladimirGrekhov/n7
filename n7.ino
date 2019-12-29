@@ -57,6 +57,7 @@ MatrixCascade<2> cascade(12, 11, 10);
 
 #include "GyverTimer.h"
 GTimer myTimer(MS);    // создать миллисекундный таймер
+GTimer myTimer2(MS);    // создать миллисекундный таймер
 
 #include "ServoSmooth.h"
 ServoSmooth servo;
@@ -482,11 +483,18 @@ void loop() {
       buttDn.isHolded();
       buttUp.isHolded();
       bygTemp = 0;
-      bygStatus = 101;
       myTimer.stop();
+       myTimer2.setTimeout(_LED_OFF_A);
+       bygStatus = 101;
       break;
     case 101://***************************************************************************** автоналив
-
+if (myTimer2.isReady()) {
+        bygLastStatus = 100;
+        bygStatus = 140;// на сон
+#if(_DEBAG_)
+        Serial.println("на сон");
+#endif
+      }
       if (bSensRums()) {
         if ( (bygRum[0] == 1) || (bygRum[1] == 1) || (bygRum[2] == 1) || (bygRum[3] == 1) || (bygRum[4] == 1) || (bygRum[5] == 1)) {
           myTimer.setTimeout(300);   // настроить таймаут
@@ -495,8 +503,10 @@ void loop() {
           vPrintDoza(24, 34);
         }
         bygTemp = 0;
+         myTimer2.setTimeout(_LED_OFF_A);
       }
       if (myTimer.isReady()) {
+         myTimer2.setTimeout(_LED_OFF_A);
         fPrintChar(bygTemp);
         bygTemp++;
         if ( (bygRum[0] == 1) || (bygRum[1] == 1) || (bygRum[2] == 1) || (bygRum[3] == 1) || (bygRum[4] == 1) || (bygRum[5] == 1)) {
@@ -517,20 +527,20 @@ void loop() {
         vPrintCapBat();
         vNaliv(bygDoza);
         vPrintDoza(24, 34);
-
+         myTimer2.setTimeout(_LED_OFF_A);
       }
       if (buttUp.isClick() ) {
+         myTimer2.setTimeout(_LED_OFF_A);
         if (bygDoza < 4) {
           bygDoza++;
           vPrintDoza(24, 34);
-
         }
       }
       if (buttDn.isClick()  ) {
+         myTimer2.setTimeout(_LED_OFF_A);
         if (bygDoza > 0) {
           bygDoza--;
           vPrintDoza(24, 34);
-
         }
       }
 
