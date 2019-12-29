@@ -2,6 +2,7 @@
 #define _DEBAG_ 0 // !!!
 #define _UGOL_ 0
 #define _PRINT_BAT_ 0
+
 #define _LED13_ 0
 
 
@@ -16,7 +17,7 @@
 #define _DEBOUNCE_R 10// настройка антидребезга (по умолчанию 80 мс)
 #define _TIME_OUT_R 1000// настройка таймаута на удержание (по умолчанию 500 мс)
 #define _CLICK_TIME_R 600// настройка таймаута между кликами (по умолчанию 300 мс)
-#define _SPEED_SERVO_R 200//установка максимальной скорости (условные единицы, 0 – 200)
+#define _SPEED_SERVO_R 50//установка максимальной скорости (условные единицы, 0 – 200)
 #define _ACCEL_SERVO_R 1//становка ускорения (0.05 – 1). При значении 1 ускорение максимальное
 #define _DO_NALIV 100 //задержка до налива мс
 #define _POSLE_NALIV 200 //задержка после налива мс
@@ -29,7 +30,7 @@
 #define _EPP_CON 88 //
 
 
-#define _ARDUINO_PIT 5.01 //5.01 ножка питания ардуино
+#define _ARDUINO_PIT 5 //5.01 ножка питания ардуино
 #define BTN_ENT_PIN 2// пин кнопки ввод
 #define BTN_UP_PIN 3// пин кнопки +
 #define BTN_DN_PIN 4// пин кнопки -
@@ -1271,7 +1272,7 @@ void vNaliv(byte iDoz) {
 void vPrintCapBat() {
 
   int capacity;
-  int volts =  analogRead(7) * _ARDUINO_PIT / 1023 * 1000;
+  int volts =  analogRead(7) * _ARDUINO_PIT; // / 1023 * 1000;
   if (volts > 3870)
     capacity = map(volts, 4200, 3870, 100, 77);
   else if ((volts <= 3870) && (volts > 3750) )
