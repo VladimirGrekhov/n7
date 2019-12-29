@@ -16,12 +16,12 @@
 #define _DEBOUNCE_R 10// настройка антидребезга (по умолчанию 80 мс)
 #define _TIME_OUT_R 1000// настройка таймаута на удержание (по умолчанию 500 мс)
 #define _CLICK_TIME_R 600// настройка таймаута между кликами (по умолчанию 300 мс)
-#define _SPEED_SERVO_R 20//установка максимальной скорости (условные единицы, 0 – 200)
+#define _SPEED_SERVO_R 30//установка максимальной скорости (условные единицы, 0 – 200)
 #define _ACCEL_SERVO_R 1//становка ускорения (0.05 – 1). При значении 1 ускорение максимальное
 #define _DO_NALIV 100 //задержка до налива мс
 #define _POSLE_NALIV 200 //задержка после налива мс
-#define _LED_OFF 5000 //задержка на отключение светодиодов !!!
-#define _POW_OFF 5000 //задержка на отключение светодиодов !!!
+#define _LED_OFF 15000 //задержка на отключение светодиодов !!!
+#define _POW_OFF 15000 //задержка на отключение светодиодов !!!
 #define _LED_OFF_A 15000 //задержка на отключение светодиодов !!!
 #define _POW_OFF_A 15000 //задержка на отключение светодиодов !!!
 
@@ -231,15 +231,14 @@ void loop() {
 #if(_DEBAG_)
       Serial.println("20-Доза");
 #endif
-
-      fPrintChar(bygDoza + 18);
+      vPrintDoza(18, 32);
       vSensRumsRefresh();
       buttDn.isHolded();
       buttUp.isHolded();
       buttEnt.isClick();
       buttDn.setTimeout(_TIME_OUT_R);        // настройка таймаута на удержание (по умолчанию 500 мс)
       bPovorot(bygPosDeg[0]);
-      myTimer.setTimeout(5000);
+      myTimer.setTimeout(_LED_OFF);
       bygStatus = 21;
       break;
     case 21://*************************************************************** 20 РЮМКА (Доза)
@@ -263,10 +262,10 @@ void loop() {
       if (buttUp.isClick() ) {
         // vSensRumsRefresh();
         myTimer.setTimeout(_LED_OFF);
-        if (bygDoza < 2) {
+        if (bygDoza < 4) {
           bygDoza++;
         }
-        fPrintChar(bygDoza + 18);
+        vPrintDoza(18, 32);
       }
       if (buttDn.isClick()  ) {
         // vSensRumsRefresh();
@@ -274,7 +273,7 @@ void loop() {
         if (bygDoza > 0) {
           bygDoza--;
         }
-        fPrintChar(bygDoza + 18);
+        vPrintDoza(18, 32);
       }
       if (buttDn.isHolded()) {
         bygStatus = 70;//
@@ -325,7 +324,7 @@ void loop() {
       break;
     case 40:// ****************************************************** 40 налив
       vPrintCapBat();
-      vNaliv(0);
+      vNaliv(bygDoza);
       bygStatus = 20;// на рюмку
       break;
 
@@ -474,7 +473,7 @@ void loop() {
       vLedEfSel(iNumEf);
       break;
     case 100://**************************************************************** автоналив
-      fPrintChar(bygDoza + 24);// а
+      vPrintDoza(24, 34);
       vSensRumsRefresh();
       buttEnt.isClick();
       buttUp.isClick();
@@ -484,52 +483,53 @@ void loop() {
       buttUp.isHolded();
       bygTemp = 0;
       bygStatus = 101;
-       myTimer.stop();
+      myTimer.stop();
       break;
     case 101://***************************************************************************** автоналив
 
       if (bSensRums()) {
-        if( (bygRum[0] == 1) || (bygRum[1] == 1) || (bygRum[2] == 1) || (bygRum[3] == 1) || (bygRum[4] == 1) || (bygRum[5] == 1)){
-           myTimer.setTimeout(300);   // настроить таймаут
-        }else {
+        if ( (bygRum[0] == 1) || (bygRum[1] == 1) || (bygRum[2] == 1) || (bygRum[3] == 1) || (bygRum[4] == 1) || (bygRum[5] == 1)) {
+          myTimer.setTimeout(300);   // настроить таймаут
+        } else {
           myTimer.stop();
-           fPrintChar(bygDoza + 24);// а
+          vPrintDoza(24, 34);
         }
         bygTemp = 0;
       }
       if (myTimer.isReady()) {
         fPrintChar(bygTemp);
         bygTemp++;
-         if( (bygRum[0] == 1) || (bygRum[1] == 1) || (bygRum[2] == 1) || (bygRum[3] == 1) || (bygRum[4] == 1) || (bygRum[5] == 1)){
-           myTimer.setTimeout(300);   // настроить таймаут
-        }else {
+        if ( (bygRum[0] == 1) || (bygRum[1] == 1) || (bygRum[2] == 1) || (bygRum[3] == 1) || (bygRum[4] == 1) || (bygRum[5] == 1)) {
+          myTimer.setTimeout(300);   // настроить таймаут
+        } else {
           myTimer.stop();
           bygTemp = 0;
-           fPrintChar(bygDoza + 24);// а
+          vPrintDoza(24, 34);
         }
         if (bygTemp > 10) {
           bygStatus = 102;
           myTimer.stop();
-          
+
         }
       }
 
       if (buttEnt.isClick() ) {
         vPrintCapBat();
-        vNaliv(0);
-        fPrintChar(bygDoza + 24);// а
+        vNaliv(bygDoza);
+        vPrintDoza(24, 34);
+
       }
       if (buttUp.isClick() ) {
-        if (bygDoza < 2) {
+        if (bygDoza < 4) {
           bygDoza++;
-          fPrintChar(bygDoza + 24);
+          vPrintDoza(24, 34);
 
         }
       }
       if (buttDn.isClick()  ) {
         if (bygDoza > 0) {
           bygDoza--;
-          fPrintChar(bygDoza + 24);
+          vPrintDoza(24, 34);
 
         }
       }
@@ -538,91 +538,54 @@ void loop() {
         bygStatus = 20;
       }
       if (buttUp.isHolded()) {
-        bygStatus = 110;
+        bygStatus = 120;
       }
       break;
     case 102:
       vPrintCapBat();
-      vNaliv(0);
+      vNaliv(bygDoza);
       bygStatus = 100;
-      break;
-    case 110://**************************************************************** 2 - 3 дозы
-      fPrintChar(30 + bygAutoDoza);
-      bygStatus = 111;
-      vSensRumsRefresh();
-      buttEnt.isClick();
-      buttUp.isClick();
-      buttDn.isClick();
-      buttDn.isClick();
-      buttDn.isHolded();
-      buttUp.isHolded();
-      break;
-    case 111:// автоналив
-      if (bSensRums()) {
-        myTimer.setTimeout(3000);   // настроить таймаут
-      }
-      if (myTimer.isReady()) {
-        vPrintCapBat();
-        vNaliv(bygAutoDoza + 1);
-        fPrintChar(30 + bygAutoDoza);// а
-      }
-      if (buttEnt.isClick() ) {
-        vPrintCapBat();
-        vNaliv(bygAutoDoza + 1);
-        fPrintChar(30 +  bygAutoDoza);// а
-      }
-      if (buttUp.isClick() ) {
-        if (bygAutoDoza < 1) {
-          bygAutoDoza = 1;
-        }
-        fPrintChar(30 + bygAutoDoza);
-      }
-      if (buttDn.isClick()  ) {
-        if (bygAutoDoza > 0) {
-          bygAutoDoza = 0;
-        }
-        fPrintChar(30 + bygAutoDoza);
-      }
-
-      if (buttDn.isHolded()) {
-        bygStatus = 100;
-      }
-      if (buttUp.isHolded()) {
-        bygStatus = 120;
-      }
       break;
     case 120://**************************************************************** ручной налив
       vRuchLeds();
       bPovorot(bygPosDeg[0]);
-      fPrintChar(32 + bygDoza);// а
-      bygStatus = 121;
+      vPrintDoza(32, 36);
       buttEnt.isClick();
       buttUp.isClick();
       buttDn.isClick();
       buttDn.isHolded();
       buttUp.isHolded();
       vRuchLeds();
+       myTimer.setTimeout(_LED_OFF);
+        bygStatus = 121;
       break;
     case 121://**************************************************************** ручной налив
+    if (myTimer.isReady()) {
+        bygLastStatus = 120;
+        bygStatus = 140;// на сон
+#if(_DEBAG_)
+        Serial.println("на сон");
+#endif
+      }
       if (buttEnt.isClick() ) {
-        vNalivR(0);
+        vNalivR(bygDoza);
       }
 
       if (buttUp.isClick() ) {
 
-        if (bygDoza < 2) {
+        if (bygDoza < 4) {
           bygDoza++;
         }
-        fPrintChar(bygDoza + 32);
+        vPrintDoza(32, 36);
       }
       if (buttDn.isClick()  ) {
         if (bygDoza > 0) {
           bygDoza--;
         }
-        fPrintChar(bygDoza + 32);
+        vPrintDoza(32, 36);
       }
       if (buttDn.isHolded()) {
-        bygStatus = 110;
+        bygStatus = 100;
         vSavebygRumRuch();
       }
       if (buttUp.isHolded()) {
@@ -680,7 +643,7 @@ void loop() {
     case 140://**************************************************************** sleep
       myTimer.setTimeout(_POW_OFF);
       cascade.clear();
-      fPrintChar(27 + bygDoza);
+      vPrintDoza(27, 38);
       bygStatus = 141;
       break;
     case 141://**************************************************************** sleep
@@ -1150,19 +1113,18 @@ void vNaliv(byte iDoz) {
         bygPosNaliv = 10;
         break;
       case 10:
-        if ( bygRum[0] == 1) {
+        if ( bygRum[0] == 1) {// 1 рюмка
           bPovorot(bygPosDeg[0]);
           //          DelayWithSensRum(_DO_NALIV);
           switch (iDoz) {
-            case 0:
+            case 3:
+              vPump(ulTimePamp[2]);
+              break;
+            case 4:
+              vPump(ulTimePamp[2]);
+              break;
+            default:
               vPump(ulTimePamp[bygDoza]);
-              break;
-            case 1:
-              vPump(ulTimePamp[2]);
-              break;
-            case 2:
-              vPump(ulTimePamp[2]);
-              break;
           }
           DelayWithSensRum(_POSLE_NALIV);
           bygRum[0] = 2;
@@ -1170,20 +1132,22 @@ void vNaliv(byte iDoz) {
         bygPosNaliv = 20;
         break;
       case 20:
-        if ( bygRum[1] == 1) {
+        if ( bygRum[1] == 1) {// 2 рюмка
           bPovorot(bygPosDeg[1]);
           DelayWithSensRum(_DO_NALIV);
           if ( bygRum[1] == 1) {
+#if(_DEBAG_)
+            Serial.println(iDoz);
+#endif
             switch (iDoz) {
-              case 0:
+              case 3:
+                vPump(ulTimePamp[2]);
+                break;
+              case 4:
+                vPump(ulTimePamp[2]);
+                break;
+              default:
                 vPump(ulTimePamp[bygDoza]);
-                break;
-              case 1:
-                vPump(ulTimePamp[2]);
-                break;
-              case 2:
-                vPump(ulTimePamp[2]);
-                break;
             }
           }
           DelayWithSensRum(_POSLE_NALIV);
@@ -1192,20 +1156,19 @@ void vNaliv(byte iDoz) {
         bygPosNaliv = 30;
         break;
       case 30:
-        if ( bygRum[2] == 1) {
+        if ( bygRum[2] == 1) {// 3 рюмка
           bPovorot(bygPosDeg[2]);
           DelayWithSensRum(_DO_NALIV);
           if ( bygRum[2] == 1) {
             switch (iDoz) {
-              case 0:
-                vPump(ulTimePamp[bygDoza]);
-                break;
-              case 1:
+              case 3:
                 vPump(ulTimePamp[1]);
                 break;
-              case 2:
+              case 4:
                 vPump(ulTimePamp[2]);
                 break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
           }
           DelayWithSensRum(_POSLE_NALIV);
@@ -1214,20 +1177,19 @@ void vNaliv(byte iDoz) {
         bygPosNaliv = 40;
         break;
       case 40:
-        if ( bygRum[3] == 1) {
+        if ( bygRum[3] == 1) {// 4 рюмка
           bPovorot(bygPosDeg[3]);
           DelayWithSensRum(_DO_NALIV);
           if ( bygRum[3] == 1) {
             switch (iDoz) {
-              case 0:
+              case 3:
+                vPump(ulTimePamp[1]);
+                break;
+              case 4:
+                vPump(ulTimePamp[1]);
+                break;
+              default:
                 vPump(ulTimePamp[bygDoza]);
-                break;
-              case 1:
-                vPump(ulTimePamp[1]);
-                break;
-              case 2:
-                vPump(ulTimePamp[1]);
-                break;
             }
           }
           DelayWithSensRum(_POSLE_NALIV);
@@ -1236,20 +1198,19 @@ void vNaliv(byte iDoz) {
         bygPosNaliv = 50;
         break;
       case 50:
-        if ( bygRum[4] == 1) {
+        if ( bygRum[4] == 1) {// 5 рюмка
           bPovorot(bygPosDeg[4]);
           DelayWithSensRum(_DO_NALIV);
           if ( bygRum[4] == 1) {
             switch (iDoz) {
-              case 0:
-                vPump(ulTimePamp[bygDoza]);
-                break;
-              case 1:
+              case 3:
                 vPump(ulTimePamp[0]);
                 break;
-              case 2:
+              case 4:
                 vPump(ulTimePamp[1]);
                 break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
           }
           DelayWithSensRum(_POSLE_NALIV);
@@ -1258,20 +1219,19 @@ void vNaliv(byte iDoz) {
         bygPosNaliv = 60;
         break;
       case 60:
-        if ( bygRum[5] == 1) {
+        if ( bygRum[5] == 1) {// 6 рюмка
           bPovorot(bygPosDeg[5]);
           DelayWithSensRum(_DO_NALIV);
           if ( bygRum[5] == 1) {
             switch (iDoz) {
-              case 0:
-                vPump(ulTimePamp[bygDoza]);
-                break;
-              case 1:
+              case 3:
                 vPump(ulTimePamp[0]);
                 break;
-              case 2:
+              case 4:
                 vPump(ulTimePamp[1]);
                 break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
           }
           DelayWithSensRum(_POSLE_NALIV);
@@ -1403,15 +1363,14 @@ void vNalivR(byte iDoz) {
           bPovorot(bygPosDeg[0]);
           //          DelayWithSensRum(_DO_NALIV);
           switch (iDoz) {
-            case 0:
+            case 3:
+              vPump(ulTimePamp[2]);
+              break;
+            case 4:
+              vPump(ulTimePamp[2]);
+              break;
+            default:
               vPump(ulTimePamp[bygDoza]);
-              break;
-            case 1:
-              vPump(ulTimePamp[2]);
-              break;
-            case 2:
-              vPump(ulTimePamp[2]);
-              break;
           }
           DelayWithSensRum(_POSLE_NALIV);
           //   bygRumRuch[0] = 2;
@@ -1424,15 +1383,14 @@ void vNalivR(byte iDoz) {
           DelayWithSensRum(_DO_NALIV);
           if ( bygRumRuch[1] == 1) {
             switch (iDoz) {
-              case 0:
+              case 3:
+                vPump(ulTimePamp[2]);
+                break;
+              case 4:
+                vPump(ulTimePamp[2]);
+                break;
+              default:
                 vPump(ulTimePamp[bygDoza]);
-                break;
-              case 1:
-                vPump(ulTimePamp[2]);
-                break;
-              case 2:
-                vPump(ulTimePamp[2]);
-                break;
             }
           }
           DelayWithSensRum(_POSLE_NALIV);
@@ -1446,15 +1404,14 @@ void vNalivR(byte iDoz) {
           DelayWithSensRum(_DO_NALIV);
           if ( bygRumRuch[2] == 1) {
             switch (iDoz) {
-              case 0:
-                vPump(ulTimePamp[bygDoza]);
-                break;
-              case 1:
+              case 3:
                 vPump(ulTimePamp[1]);
                 break;
-              case 2:
+              case 4:
                 vPump(ulTimePamp[2]);
                 break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
           }
           DelayWithSensRum(_POSLE_NALIV);
@@ -1468,15 +1425,14 @@ void vNalivR(byte iDoz) {
           DelayWithSensRum(_DO_NALIV);
           if ( bygRumRuch[3] == 1) {
             switch (iDoz) {
-              case 0:
+              case 3:
+                vPump(ulTimePamp[1]);
+                break;
+              case 4:
+                vPump(ulTimePamp[1]);
+                break;
+              default:
                 vPump(ulTimePamp[bygDoza]);
-                break;
-              case 1:
-                vPump(ulTimePamp[1]);
-                break;
-              case 2:
-                vPump(ulTimePamp[1]);
-                break;
             }
           }
           DelayWithSensRum(_POSLE_NALIV);
@@ -1490,15 +1446,14 @@ void vNalivR(byte iDoz) {
           DelayWithSensRum(_DO_NALIV);
           if ( bygRumRuch[4] == 1) {
             switch (iDoz) {
-              case 0:
-                vPump(ulTimePamp[bygDoza]);
-                break;
-              case 1:
+              case 3:
                 vPump(ulTimePamp[0]);
                 break;
-              case 2:
+              case 4:
                 vPump(ulTimePamp[1]);
                 break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
           }
           DelayWithSensRum(_POSLE_NALIV);
@@ -1512,15 +1467,14 @@ void vNalivR(byte iDoz) {
           DelayWithSensRum(_DO_NALIV);
           if ( bygRumRuch[5] == 1) {
             switch (iDoz) {
-              case 0:
-                vPump(ulTimePamp[bygDoza]);
-                break;
-              case 1:
+              case 3:
                 vPump(ulTimePamp[0]);
                 break;
-              case 2:
+              case 4:
                 vPump(ulTimePamp[1]);
                 break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
           }
           DelayWithSensRum(_POSLE_NALIV);
@@ -1551,4 +1505,17 @@ void vTuneFotosensR() {
   Serial.println( igUstDif[5]);
   Serial.println("Уставки диф");
 #endif
+}
+void vPrintDoza(byte bySdvig, byte bySdvig2) {
+  fPrintChar(bygDoza + bySdvig);
+  switch (bygDoza) {
+    case 3:
+      fPrintChar(bygDoza + bySdvig2);
+      break;
+    case 4:
+      fPrintChar(bygDoza + bySdvig2);
+      break;
+    default:
+      fPrintChar(bygDoza + bySdvig);
+  }
 }
