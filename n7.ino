@@ -1,5 +1,5 @@
 //08 12 2019 - 27
-#define _DEBAG_ 1 // !!!
+#define _DEBAG_ 0 // !!!
 #define _UGOL_ 0
 #define _PRINT_BAT_ 0
 #define _LED13_ 0
@@ -85,19 +85,17 @@ void setup() {
   digitalWrite(5, 0);
   pinMode(PIN_SERVO_ON, OUTPUT);
   pinMode(PIN_PUMP_ON, OUTPUT);
+  digitalWrite(PIN_PUMP_ON, 0);
+  digitalWrite(PIN_SERVO_ON, 1);
 
 #if(_LED13_)
 #pragma message "_LED13_"
   pinMode(13, OUTPUT);
 #endif
-#if(_LED13_)
 
+#if(_LED13_)
 #endif
 
-
-
-  digitalWrite(PIN_PUMP_ON, 0);
-  digitalWrite(PIN_SERVO_ON, 1);
 #if(_DEBAG_)
 #pragma message "D_E_B_A_G"
   Serial.begin(9600);
