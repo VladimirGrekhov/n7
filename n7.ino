@@ -16,7 +16,7 @@
 #define _DEBOUNCE_R 10// настройка антидребезга (по умолчанию 80 мс)
 #define _TIME_OUT_R 1000// настройка таймаута на удержание (по умолчанию 500 мс)
 #define _CLICK_TIME_R 600// настройка таймаута между кликами (по умолчанию 300 мс)
-#define _SPEED_SERVO_R 30//установка максимальной скорости (условные единицы, 0 – 200)
+#define _SPEED_SERVO_R 200//установка максимальной скорости (условные единицы, 0 – 200)
 #define _ACCEL_SERVO_R 1//становка ускорения (0.05 – 1). При значении 1 ускорение максимальное
 #define _DO_NALIV 100 //задержка до налива мс
 #define _POSLE_NALIV 200 //задержка после налива мс
@@ -51,7 +51,7 @@ GButton buttUp(BTN_UP_PIN);
 GButton buttDn(BTN_DN_PIN);
 
 #include "ledEf.h"
-#include "simbols.h"
+#include "simbols1.h"
 #include "MatrixCascade.h"
 MatrixCascade<2> cascade(12, 11, 10);
 
@@ -113,7 +113,7 @@ void setup() {
     Serial.println("eep Foto !");
 #endif
   }
-   EEPROM.get(51, bygTemp);
+  EEPROM.get(51, bygTemp);
   if (bygTemp == _EPP_CON) {
     vGetFotoSensR();
   } else {
@@ -137,7 +137,7 @@ void setup() {
     Serial.println("eep Pump !");
 #endif
   }
- 
+
   EEPROM.get(54, bygTemp);
   if (bygTemp == _EPP_CON) {
     vGetbygRum();
@@ -222,7 +222,7 @@ void loop() {
       break;
     case 10:
       if (vLedEf2(LedData2, 0)) {
-        if(bygLastStatus == 0){
+        if (bygLastStatus == 0) {
           bygLastStatus = 20;
         }
         bygStatus = bygLastStatus;
@@ -624,520 +624,543 @@ void loop() {
         vSavebygRumRuch();
         bygStatus = 120;//
       }
-        if (buttEnt.isClick() ) {
-          if ( bygRumRuch[bygPosN] == 1) {
-            bygRumRuch[bygPosN] = 0;
-            cascade[1].on(0, bygPosN + 1 ); //красный
-            cascade[1].off(1, bygPosN + 1);//зеленый
-            cascade[1].off(2, bygPosN + 1);// синий
-          } else {
-            bygRumRuch[bygPosN] = 1;
-            cascade[1].off(0, bygPosN + 1 ); //красный
-            cascade[1].on(1, bygPosN + 1);//зеленый
-            cascade[1].off(2, bygPosN + 1);// синий
-          }
+      if (buttEnt.isClick() ) {
+        if ( bygRumRuch[bygPosN] == 1) {
+          bygRumRuch[bygPosN] = 0;
+          cascade[1].on(0, bygPosN + 1 ); //красный
+          cascade[1].off(1, bygPosN + 1);//зеленый
+          cascade[1].off(2, bygPosN + 1);// синий
+        } else {
+          bygRumRuch[bygPosN] = 1;
+          cascade[1].off(0, bygPosN + 1 ); //красный
+          cascade[1].on(1, bygPosN + 1);//зеленый
+          cascade[1].off(2, bygPosN + 1);// синий
         }
-        if (buttDn.isClick() ) {
-          if (bygPosN < 5) {
-            bygPosN++;
-          }
+      }
+      if (buttDn.isClick() ) {
+        if (bygPosN < 5) {
+          bygPosN++;
         }
-        if (buttUp.isClick()  ) {
+      }
+      if (buttUp.isClick()  ) {
 
-          if (bygPosN > 0) {
-            bygPosN--;
-          }
+        if (bygPosN > 0) {
+          bygPosN--;
         }
+      }
 
-        bPovorot(bygPosDeg[bygPosN]);
+      bPovorot(bygPosDeg[bygPosN]);
 
-        if (buttDn.isHolded()) {
-          bygStatus = 120;
-          vSavebygRumRuch();
-        }
-        if (buttUp.isHolded()) {
-          vSavebygRumRuch();
-          bygStatus = 20;
-        }
-        break;
-      case 140://**************************************************************** sleep
-        myTimer.setTimeout(_POW_OFF);
-        cascade.clear();
-        vPrintDoza(27, 38);
-        bygStatus = 141;
-        break;
-      case 141://**************************************************************** sleep
-        if (myTimer.isReady()) {
-          EEPROM.update(52, bygLastStatus);
-          EEPROM.update(54, _EPP_CON);
-          EEPROM.update(60, bygDoza);
-          vSavebygRum();
-          bygStatus = 80;
-        }
-        if(bygLastStatus != 120){
+      if (buttDn.isHolded()) {
+        bygStatus = 120;
+        vSavebygRumRuch();
+      }
+      if (buttUp.isHolded()) {
+        vSavebygRumRuch();
+        bygStatus = 20;
+      }
+      break;
+    case 140://**************************************************************** sleep
+      myTimer.setTimeout(_POW_OFF);
+      cascade.clear();
+      vPrintDoza(27, 38);
+      bygStatus = 141;
+      break;
+    case 141://**************************************************************** sleep
+      if (myTimer.isReady()) {
+        EEPROM.update(52, bygLastStatus);
+        EEPROM.update(54, _EPP_CON);
+        EEPROM.update(60, bygDoza);
+        vSavebygRum();
+        bygStatus = 80;
+      }
+      if (bygLastStatus != 120) {
         if ( bSensRums()) {
           bygStatus = bygLastStatus;
         }
-         }
-        if (buttEnt.isClick() ) {
-          bygStatus = bygLastStatus;
-        }
-        if (buttDn.isClick() ) {
-          bygStatus = bygLastStatus;
-        }
-        if (buttUp.isClick() ) {
-          bygStatus = bygLastStatus;
-        }
-        break;
-      }//switch (bygStatus)
-  }// loop
-  void fPrintChar(byte iNumChar) {
-    for (byte i = 0; i < 8; i ++)
-    {
-      //0 - адрес, либо номер устройства на шине SPI
-      //j - индекс массива байт с символом
-      //i - текущий ряд на матрице    //CountDigits[i] - значение(byte) которым заполнится ряд
-      cascade[0].setRow(i, CountDigits[ iNumChar][i]);
-    }
+      }
+      if (buttEnt.isClick() ) {
+        bygStatus = bygLastStatus;
+      }
+      if (buttDn.isClick() ) {
+        bygStatus = bygLastStatus;
+      }
+      if (buttUp.isClick() ) {
+        bygStatus = bygLastStatus;
+      }
+      break;
+  }//switch (bygStatus)
+}// loop
+void fPrintChar(byte iNumChar) {
+  for (byte i = 0; i < 8; i ++)
+  {
+    //0 - адрес, либо номер устройства на шине SPI
+    //j - индекс массива байт с символом
+    //i - текущий ряд на матрице    //CountDigits[i] - значение(byte) которым заполнится ряд
+    cascade[0].setRow(i, CountDigits[ iNumChar][i]);
   }
-  void bPovorot(byte iUgol) {
-    static byte iUgolLast;
-    if (iUgol != iUgolLast) {
-      bSensRums();
-      servo.setTargetDeg(iUgol);
-      while (!servo.tick()) {
+}
+void bPovorot(byte iUgol) {
+  static byte iUgolLast;
+  if (iUgol != iUgolLast) {
+    bSensRums();
+    servo.setTargetDeg(iUgol);
+    while (!servo.tick()) {
 #if(_UGOL_)
-        Serial.println(servo.getCurrentDeg());
-#endif
-      }
-      iUgolLast = iUgol;
-    }
-  }
-  void vTuneFotosens() {
-    //  cascade[1].clear();
-    igUst[0] =  analogRead(1);
-    igUst[1] =  analogRead(2);
-    igUst[2] =  analogRead(3);
-    igUst[3] =  analogRead(4);
-    igUst[4] =  analogRead(5);
-    igUst[5] =  analogRead(6);
-#if(_DEBAG_)
-    Serial.println( igUst[0]);
-    Serial.println( igUst[1]);
-    Serial.println( igUst[2]);
-    Serial.println( igUst[3]);
-    Serial.println( igUst[4]);
-    Serial.println( igUst[5]);
-    Serial.println("Уставки без рюмок");
-#endif
-  }
-  bool bLedRum(byte iPos, bool bRefFresh) {
-    if ((bygRumLast[iPos] != bygRum[iPos]) || bRefFresh) {
-      switch (bygRum[iPos]) {
-        case 0:
-          cascade[1].on(0, iPos + 1 ); //красный
-          cascade[1].off(1, iPos + 1);//зеленый
-          cascade[1].off(2, iPos + 1);// синий
-#if(_DEBAG_)
-          Serial.println("Красный");
-#endif
-          break;
-        case 1:
-          cascade[1].off(0, iPos + 1 ); //красный
-          cascade[1].on(1, iPos + 1);//зеленый
-          cascade[1].off(2, iPos + 1);// синий
-#if(_DEBAG_)
-          Serial.println("зеленый");
-#endif
-          break;
-        case 2:
-          cascade[1].off(0, iPos + 1 ); //красный
-          cascade[1].off(1, iPos + 1);//зеленый
-          cascade[1].on(2, iPos + 1);// синий
-#if(_DEBAG_)
-          Serial.println("Синий");
-#endif
-          break;
-      }
-      bygRumLast[iPos] = bygRum[iPos];
-      return 1;
-    } else return 0;
-  }
-  void vFotoRum(byte iPos) {
-    if ((igUst[iPos] - analogRead(iPos + 1) > igUstDif[iPos]) ) {
-      if ( bygRum[iPos] != 2) {
-        bygRum[iPos] = 1;
-      }
-    }
-    else  bygRum[iPos] = 0;
-  }
-  bool bSensRums() {
-    bool Rsult = 0;
-    for (byte iPos = 0; iPos < 6; iPos++) {
-      vFotoRum(iPos);
-      Rsult = Rsult +  bLedRum(iPos, 0);
-    }
-    return Rsult;
-  }//bSensRums()
-  void vSensRumsRefresh() {
-    bool Rsult;
-    for (int iPos = 0; iPos < 6; iPos++) {
-      vFotoRum(iPos);
-      bLedRum(iPos, 1);
-    }
-
-  }//bSensRums()
-  void vSaveFotoSens() {
-    EEPROM.put(0, igUst[0]);
-    EEPROM.put(2, igUst[1]);
-    EEPROM.put(4, igUst[2]);
-    EEPROM.put(6, igUst[3]);
-    EEPROM.put(8, igUst[4]);
-    EEPROM.put(10, igUst[5]);
-    EEPROM.put(12, _EPP_CON);
-  }
-  void vSaveServoPos() {
-    EEPROM.update(13, bygPosDeg[0]);
-    EEPROM.update(15, bygPosDeg[1]);
-    EEPROM.update(17, bygPosDeg[2]);
-    EEPROM.update(19, bygPosDeg[3]);
-    EEPROM.update(21, bygPosDeg[4]);
-    EEPROM.update(23, bygPosDeg[5]);
-    EEPROM.update(25, _EPP_CON);
-  }
-  void vSaveTimePomp() {
-    EEPROM.put(26, ulTimePamp[0]);
-    EEPROM.put(30, ulTimePamp[1]);
-    EEPROM.put(34, ulTimePamp[2]);
-    EEPROM.put(38, _EPP_CON);
-  }
-  void vSaveFotoSensR() {
-    EEPROM.put(39, igUstDif[0]);
-    EEPROM.put(41, igUstDif[1]);
-    EEPROM.put(43, igUstDif[2]);
-    EEPROM.put(45, igUstDif[3]);
-    EEPROM.put(47, igUstDif[4]);
-    EEPROM.put(49, igUstDif[5]);
-    EEPROM.put(51, _EPP_CON);
-  }
-  void vSavebygRum() {
-    EEPROM.update(61, bygRum[0]);
-    EEPROM.update(62, bygRum[1]);
-    EEPROM.update(63, bygRum[2]);
-    EEPROM.update(64, bygRum[3]);
-    EEPROM.update(65, bygRum[4]);
-    EEPROM.update(66, bygRum[5]);
-  }
-  void vSavebygRumRuch() {
-    EEPROM.update(67, bygRumRuch[0]);
-    EEPROM.update(68, bygRumRuch[1]);
-    EEPROM.update(69, bygRumRuch[2]);
-    EEPROM.update(70, bygRumRuch[3]);
-    EEPROM.update(71, bygRumRuch[4]);
-    EEPROM.update(72, bygRumRuch[5]);
-    EEPROM.update(73, _EPP_CON);
-  }
-  void vGetbygRumRuch() {
-    EEPROM.get(67, bygRumRuch[0]);
-    EEPROM.get(68, bygRumRuch[1]);
-    EEPROM.get(69, bygRumRuch[2]);
-    EEPROM.get(70, bygRumRuch[3]);
-    EEPROM.get(71, bygRumRuch[4]);
-    EEPROM.get(72, bygRumRuch[5]);
-#if(_DEBAG_)
-    Serial.println("Руч");
-    Serial.println( bygRumRuch[0]);
-    Serial.println( bygRumRuch[1]);
-    Serial.println( bygRumRuch[2]);
-    Serial.println( bygRumRuch[3]);
-    Serial.println( bygRumRuch[4]);
-    Serial.println( bygRumRuch[5]);
-#endif
-  }
-  void vGetbygRum() {
-    EEPROM.get(61, bygRum[0]);
-    EEPROM.get(62, bygRum[1]);
-    EEPROM.get(63, bygRum[2]);
-    EEPROM.get(64, bygRum[3]);
-    EEPROM.get(65, bygRum[4]);
-    EEPROM.get(66, bygRum[5]);
-#if(_DEBAG_)
-    Serial.println("Рюмки");
-    Serial.println( bygRum[0]);
-    Serial.println( bygRum[1]);
-    Serial.println( bygRum[2]);
-    Serial.println( bygRum[3]);
-    Serial.println( bygRum[4]);
-    Serial.println( bygRum[5]);
-#endif
-  }
-  void vGetTimePomp() {
-    EEPROM.get(26, ulTimePamp[0]);
-    EEPROM.get(30, ulTimePamp[1]);
-    EEPROM.get(34, ulTimePamp[2]);
-#if(_DEBAG_)
-    Serial.println("Насос");
-    Serial.println( ulTimePamp[0]);
-    Serial.println( ulTimePamp[1]);
-    Serial.println( ulTimePamp[2]);
-#endif
-  }
-  void vGetFotoSens() {
-    EEPROM.get(0, igUst[0]);
-    EEPROM.get(2, igUst[1]);
-    EEPROM.get(4, igUst[2]);
-    EEPROM.get(6, igUst[3]);
-    EEPROM.get(8, igUst[4]);
-    EEPROM.get(10, igUst[5]);
-#if(_DEBAG_)
-    Serial.println("Фото");
-    Serial.println( igUst[0]);
-    Serial.println( igUst[1]);
-    Serial.println( igUst[2]);
-    Serial.println( igUst[3]);
-    Serial.println( igUst[4]);
-    Serial.println( igUst[5]);
-#endif
-  }
-  void vGetServoPos() {
-    EEPROM.get(13, bygPosDeg[0]);
-    EEPROM.get(15, bygPosDeg[1]);
-    EEPROM.get(17, bygPosDeg[2]);
-    EEPROM.get(19, bygPosDeg[3]);
-    EEPROM.get(21, bygPosDeg[4]);
-    EEPROM.get(23, bygPosDeg[5]);
-#if(_DEBAG_)
-    Serial.println("Серво");
-    Serial.println( bygPosDeg[0]);
-    Serial.println( bygPosDeg[1]);
-    Serial.println( bygPosDeg[2]);
-    Serial.println( bygPosDeg[3]);
-    Serial.println( bygPosDeg[4]);
-    Serial.println( bygPosDeg[5]);
-#endif
-  }
-  void vGetFotoSensR() {
-    EEPROM.get(39, igUstDif[0]);
-    EEPROM.get(41, igUstDif[1]);
-    EEPROM.get(43, igUstDif[2]);
-    EEPROM.get(45, igUstDif[3]);
-    EEPROM.get(47, igUstDif[4]);
-    EEPROM.get(49, igUstDif[5]);
-#if(_DEBAG_)
-    Serial.println("Диф");
-    Serial.println( igUstDif[0]);
-    Serial.println( igUstDif[1]);
-    Serial.println( igUstDif[2]);
-    Serial.println( igUstDif[3]);
-    Serial.println( igUstDif[4]);
-    Serial.println( igUstDif[5]);
-#endif
-  }
-  void vCalibServo() {
-
-    //  static bool flagLad;
-    if (!servo.tick()) {
-#if(_DEBAG_)
       Serial.println(servo.getCurrentDeg());
 #endif
     }
-    if (buttEnt.isHolded()) {
-      vSaveServoPos();
-      cascade[0].setRow(7, 255);
-    }
-    if (buttEnt.isClick()) {
-      cascade[0].setRow(7, 0);
-      if (bygPosN < 6) {
-        cascade[1].clear();
-        bygPosN++;
-        cascade[1].on(1, (bygPosN + 1)); // зеленый
-      }
-      if (bygPosN > 5) {
-        cascade[1].clear();
-        bygPosN = 0;
-        cascade[1].on(1, (bygPosN + 1)); // зеленый
-      }
-      //    servo.setTargetDeg(bygPosDeg[bygPosN]);
-
-    }
-    if (buttDn.isClick()) {
-      if (bygPosDeg[bygPosN] < 180) {
-        bygPosDeg[bygPosN]++;
-      }
-    }
-    if (buttUp.isClick()) {
-      if (bygPosDeg[bygPosN] > 0) {
-        bygPosDeg[bygPosN]--;
-      }
-    }
-    bPovorot(bygPosDeg[bygPosN]);
+    iUgolLast = iUgol;
   }
-  void vPumpCalib() {
-
-    static unsigned long ulTimeNaliv = 0;
-    static unsigned long ulStartTime;
-    static unsigned long ulStopTime;
-    static unsigned long ulDifTime = 0;
-    static unsigned long ulStartNalivTime;
-
-    static bool bTrigStart = 0;
-    static byte iDoza;
-
-    if (buttUp.isClick()) {
-      if (bygPosN < 6) {
-        bygPosN++;
-        cascade[0].setRow(7, 0);
-        cascade[0].on(7, bygPosN);
-      }
-      switch (bygPosN) {
-        case 0:
-          bPovorot(bygPosDeg[0]);
-          break;
-        case 1:
-          bPovorot(bygPosDeg[1]);
-          if (ulTimeNaliv != 0 ) {
-            ulTimePamp[0] = ulTimeNaliv;
-            bygRum[0] = 2;
-            break;
-          case 2:
-            bPovorot(bygPosDeg[2]);
-            break;
-          case 3:
-            bPovorot(bygPosDeg[3]);
-            if ( ulTimeNaliv != 0 ) {
-              ulTimePamp[1] = ulTimeNaliv;
-              Serial.println(ulTimePamp[1]);
-              bygRum[2] = 2;
-            }
-            break;
-          case 4:
-            bPovorot(bygPosDeg[4]);
-            break;
-          case 5:
-            bPovorot(bygPosDeg[5]);
-            if ( ulTimeNaliv != 0 ) {
-              ulTimePamp[2] = ulTimeNaliv;
-              bygRum[4] = 2;
-            }
-            break;
-          case 6:
-            cascade[0].setRow(7, 0);
-            cascade[0].on(7, 7);
-            break;
-          }
-      }
-      ulTimeNaliv = 0;
+}
+void vTuneFotosens() {
+  //  cascade[1].clear();
+  igUst[0] =  analogRead(1);
+  igUst[1] =  analogRead(2);
+  igUst[2] =  analogRead(3);
+  igUst[3] =  analogRead(4);
+  igUst[4] =  analogRead(5);
+  igUst[5] =  analogRead(6);
+#if(_DEBAG_)
+  Serial.println( igUst[0]);
+  Serial.println( igUst[1]);
+  Serial.println( igUst[2]);
+  Serial.println( igUst[3]);
+  Serial.println( igUst[4]);
+  Serial.println( igUst[5]);
+  Serial.println("Уставки без рюмок");
+#endif
+}
+bool bLedRum(byte iPos, bool bRefFresh) {
+  if ((bygRumLast[iPos] != bygRum[iPos]) || bRefFresh) {
+    switch (bygRum[iPos]) {
+      case 0:
+        cascade[1].on(0, iPos + 1 ); //красный
+        cascade[1].off(1, iPos + 1);//зеленый
+        cascade[1].off(2, iPos + 1);// синий
+#if(_DEBAG_)
+        Serial.println("Красный");
+#endif
+        break;
+      case 1:
+        cascade[1].off(0, iPos + 1 ); //красный
+        cascade[1].on(1, iPos + 1);//зеленый
+        cascade[1].off(2, iPos + 1);// синий
+#if(_DEBAG_)
+        Serial.println("зеленый");
+#endif
+        break;
+      case 2:
+        cascade[1].off(0, iPos + 1 ); //красный
+        cascade[1].off(1, iPos + 1);//зеленый
+        cascade[1].on(2, iPos + 1);// синий
+#if(_DEBAG_)
+        Serial.println("Синий");
+#endif
+        break;
     }
-    if (buttDn.isClick()) {
-      if (bygPosN > 0) {
-        bygPosN--;
-        cascade[0].setRow(7, 0);
-        cascade[0].on(7, bygPosN);
-      }
-      switch (bygPosN) {
-        case 0:
-          bPovorot(bygPosDeg[0]);
-          break;
-        case 1:
-          bPovorot(bygPosDeg[1]);
+    bygRumLast[iPos] = bygRum[iPos];
+    return 1;
+  } else return 0;
+}
+void vFotoRum(byte iPos) {
+  if ((igUst[iPos] - analogRead(iPos + 1) > igUstDif[iPos]) ) {
+    if ( bygRum[iPos] != 2) {
+      bygRum[iPos] = 1;
+    }
+  }
+  else  bygRum[iPos] = 0;
+}
+bool bSensRums() {
+  bool Rsult = 0;
+  for (byte iPos = 0; iPos < 6; iPos++) {
+    vFotoRum(iPos);
+    Rsult = Rsult +  bLedRum(iPos, 0);
+  }
+  return Rsult;
+}//bSensRums()
+void vSensRumsRefresh() {
+  bool Rsult;
+  for (int iPos = 0; iPos < 6; iPos++) {
+    vFotoRum(iPos);
+    bLedRum(iPos, 1);
+  }
+
+}//bSensRums()
+void vSaveFotoSens() {
+  EEPROM.put(0, igUst[0]);
+  EEPROM.put(2, igUst[1]);
+  EEPROM.put(4, igUst[2]);
+  EEPROM.put(6, igUst[3]);
+  EEPROM.put(8, igUst[4]);
+  EEPROM.put(10, igUst[5]);
+  EEPROM.put(12, _EPP_CON);
+}
+void vSaveServoPos() {
+  EEPROM.update(13, bygPosDeg[0]);
+  EEPROM.update(15, bygPosDeg[1]);
+  EEPROM.update(17, bygPosDeg[2]);
+  EEPROM.update(19, bygPosDeg[3]);
+  EEPROM.update(21, bygPosDeg[4]);
+  EEPROM.update(23, bygPosDeg[5]);
+  EEPROM.update(25, _EPP_CON);
+}
+void vSaveTimePomp() {
+  EEPROM.put(26, ulTimePamp[0]);
+  EEPROM.put(30, ulTimePamp[1]);
+  EEPROM.put(34, ulTimePamp[2]);
+  EEPROM.put(38, _EPP_CON);
+}
+void vSaveFotoSensR() {
+  EEPROM.put(39, igUstDif[0]);
+  EEPROM.put(41, igUstDif[1]);
+  EEPROM.put(43, igUstDif[2]);
+  EEPROM.put(45, igUstDif[3]);
+  EEPROM.put(47, igUstDif[4]);
+  EEPROM.put(49, igUstDif[5]);
+  EEPROM.put(51, _EPP_CON);
+}
+void vSavebygRum() {
+  EEPROM.update(61, bygRum[0]);
+  EEPROM.update(62, bygRum[1]);
+  EEPROM.update(63, bygRum[2]);
+  EEPROM.update(64, bygRum[3]);
+  EEPROM.update(65, bygRum[4]);
+  EEPROM.update(66, bygRum[5]);
+}
+void vSavebygRumRuch() {
+  EEPROM.update(67, bygRumRuch[0]);
+  EEPROM.update(68, bygRumRuch[1]);
+  EEPROM.update(69, bygRumRuch[2]);
+  EEPROM.update(70, bygRumRuch[3]);
+  EEPROM.update(71, bygRumRuch[4]);
+  EEPROM.update(72, bygRumRuch[5]);
+  EEPROM.update(73, _EPP_CON);
+}
+void vGetbygRumRuch() {
+  EEPROM.get(67, bygRumRuch[0]);
+  EEPROM.get(68, bygRumRuch[1]);
+  EEPROM.get(69, bygRumRuch[2]);
+  EEPROM.get(70, bygRumRuch[3]);
+  EEPROM.get(71, bygRumRuch[4]);
+  EEPROM.get(72, bygRumRuch[5]);
+#if(_DEBAG_)
+  Serial.println("Руч");
+  Serial.println( bygRumRuch[0]);
+  Serial.println( bygRumRuch[1]);
+  Serial.println( bygRumRuch[2]);
+  Serial.println( bygRumRuch[3]);
+  Serial.println( bygRumRuch[4]);
+  Serial.println( bygRumRuch[5]);
+#endif
+}
+void vGetbygRum() {
+  EEPROM.get(61, bygRum[0]);
+  EEPROM.get(62, bygRum[1]);
+  EEPROM.get(63, bygRum[2]);
+  EEPROM.get(64, bygRum[3]);
+  EEPROM.get(65, bygRum[4]);
+  EEPROM.get(66, bygRum[5]);
+#if(_DEBAG_)
+  Serial.println("Рюмки");
+  Serial.println( bygRum[0]);
+  Serial.println( bygRum[1]);
+  Serial.println( bygRum[2]);
+  Serial.println( bygRum[3]);
+  Serial.println( bygRum[4]);
+  Serial.println( bygRum[5]);
+#endif
+}
+void vGetTimePomp() {
+  EEPROM.get(26, ulTimePamp[0]);
+  EEPROM.get(30, ulTimePamp[1]);
+  EEPROM.get(34, ulTimePamp[2]);
+#if(_DEBAG_)
+  Serial.println("Насос");
+  Serial.println( ulTimePamp[0]);
+  Serial.println( ulTimePamp[1]);
+  Serial.println( ulTimePamp[2]);
+#endif
+}
+void vGetFotoSens() {
+  EEPROM.get(0, igUst[0]);
+  EEPROM.get(2, igUst[1]);
+  EEPROM.get(4, igUst[2]);
+  EEPROM.get(6, igUst[3]);
+  EEPROM.get(8, igUst[4]);
+  EEPROM.get(10, igUst[5]);
+#if(_DEBAG_)
+  Serial.println("Фото");
+  Serial.println( igUst[0]);
+  Serial.println( igUst[1]);
+  Serial.println( igUst[2]);
+  Serial.println( igUst[3]);
+  Serial.println( igUst[4]);
+  Serial.println( igUst[5]);
+#endif
+}
+void vGetServoPos() {
+  EEPROM.get(13, bygPosDeg[0]);
+  EEPROM.get(15, bygPosDeg[1]);
+  EEPROM.get(17, bygPosDeg[2]);
+  EEPROM.get(19, bygPosDeg[3]);
+  EEPROM.get(21, bygPosDeg[4]);
+  EEPROM.get(23, bygPosDeg[5]);
+#if(_DEBAG_)
+  Serial.println("Серво");
+  Serial.println( bygPosDeg[0]);
+  Serial.println( bygPosDeg[1]);
+  Serial.println( bygPosDeg[2]);
+  Serial.println( bygPosDeg[3]);
+  Serial.println( bygPosDeg[4]);
+  Serial.println( bygPosDeg[5]);
+#endif
+}
+void vGetFotoSensR() {
+  EEPROM.get(39, igUstDif[0]);
+  EEPROM.get(41, igUstDif[1]);
+  EEPROM.get(43, igUstDif[2]);
+  EEPROM.get(45, igUstDif[3]);
+  EEPROM.get(47, igUstDif[4]);
+  EEPROM.get(49, igUstDif[5]);
+#if(_DEBAG_)
+  Serial.println("Диф");
+  Serial.println( igUstDif[0]);
+  Serial.println( igUstDif[1]);
+  Serial.println( igUstDif[2]);
+  Serial.println( igUstDif[3]);
+  Serial.println( igUstDif[4]);
+  Serial.println( igUstDif[5]);
+#endif
+}
+void vCalibServo() {
+
+  //  static bool flagLad;
+  if (!servo.tick()) {
+#if(_DEBAG_)
+    Serial.println(servo.getCurrentDeg());
+#endif
+  }
+  if (buttEnt.isHolded()) {
+    vSaveServoPos();
+    cascade[0].setRow(7, 255);
+  }
+  if (buttEnt.isClick()) {
+    cascade[0].setRow(7, 0);
+    if (bygPosN < 6) {
+      cascade[1].clear();
+      bygPosN++;
+      cascade[1].on(1, (bygPosN + 1)); // зеленый
+    }
+    if (bygPosN > 5) {
+      cascade[1].clear();
+      bygPosN = 0;
+      cascade[1].on(1, (bygPosN + 1)); // зеленый
+    }
+    //    servo.setTargetDeg(bygPosDeg[bygPosN]);
+
+  }
+  if (buttDn.isClick()) {
+    if (bygPosDeg[bygPosN] < 180) {
+      bygPosDeg[bygPosN]++;
+    }
+  }
+  if (buttUp.isClick()) {
+    if (bygPosDeg[bygPosN] > 0) {
+      bygPosDeg[bygPosN]--;
+    }
+  }
+  bPovorot(bygPosDeg[bygPosN]);
+}
+void vPumpCalib() {
+
+  static unsigned long ulTimeNaliv = 0;
+  static unsigned long ulStartTime;
+  static unsigned long ulStopTime;
+  static unsigned long ulDifTime = 0;
+  static unsigned long ulStartNalivTime;
+
+  static bool bTrigStart = 0;
+  static byte iDoza;
+
+  if (buttUp.isClick()) {
+    if (bygPosN < 6) {
+      bygPosN++;
+      cascade[0].setRow(7, 0);
+      cascade[0].on(7, bygPosN);
+    }
+    switch (bygPosN) {
+      case 0:
+        bPovorot(bygPosDeg[0]);
+        break;
+      case 1:
+        bPovorot(bygPosDeg[1]);
+        if (ulTimeNaliv != 0 ) {
+          ulTimePamp[0] = ulTimeNaliv;
+          bygRum[0] = 2;
           break;
         case 2:
           bPovorot(bygPosDeg[2]);
           break;
         case 3:
           bPovorot(bygPosDeg[3]);
+          if ( ulTimeNaliv != 0 ) {
+            ulTimePamp[1] = ulTimeNaliv;
+            Serial.println(ulTimePamp[1]);
+            bygRum[2] = 2;
+          }
           break;
         case 4:
           bPovorot(bygPosDeg[4]);
           break;
         case 5:
           bPovorot(bygPosDeg[5]);
+          if ( ulTimeNaliv != 0 ) {
+            ulTimePamp[2] = ulTimeNaliv;
+            bygRum[4] = 2;
+          }
           break;
+        case 6:
+          cascade[0].setRow(7, 0);
+          cascade[0].on(7, 7);
+          break;
+        }
+    }
+    ulTimeNaliv = 0;
+  }
+  if (buttDn.isClick()) {
+    if (bygPosN > 0) {
+      bygPosN--;
+      cascade[0].setRow(7, 0);
+      cascade[0].on(7, bygPosN);
+    }
+    switch (bygPosN) {
+      case 0:
+        bPovorot(bygPosDeg[0]);
+        break;
+      case 1:
+        bPovorot(bygPosDeg[1]);
+        break;
+      case 2:
+        bPovorot(bygPosDeg[2]);
+        break;
+      case 3:
+        bPovorot(bygPosDeg[3]);
+        break;
+      case 4:
+        bPovorot(bygPosDeg[4]);
+        break;
+      case 5:
+        bPovorot(bygPosDeg[5]);
+        break;
+    }
+  }
+  if (buttEnt.state() and (bygPosN == 0 or bygPosN == 2 or bygPosN == 4 )) {
+    if ( bygRum[bygPosN] == 1) {
+      if (!bTrigStart) {
+        bTrigStart = 1;
+        ulStartTime = millis();
+        digitalWrite(PIN_PUMP_ON, 1);
       }
     }
-    if (buttEnt.state() and (bygPosN == 0 or bygPosN == 2 or bygPosN == 4 )) {
-      if ( bygRum[bygPosN] == 1) {
-        if (!bTrigStart) {
-          bTrigStart = 1;
-          ulStartTime = millis();
-          digitalWrite(PIN_PUMP_ON, 1);
-        }
-      }
-    } else {
+  } else {
+    digitalWrite(PIN_PUMP_ON, 0);
+    if (bTrigStart) {
+      bTrigStart = 0;
+      ulStopTime = millis();
       digitalWrite(PIN_PUMP_ON, 0);
-      if (bTrigStart) {
-        bTrigStart = 0;
-        ulStopTime = millis();
-        digitalWrite(PIN_PUMP_ON, 0);
-        ulDifTime = ulStopTime - ulStartTime;
-        ulTimeNaliv = ulTimeNaliv + ulDifTime;
+      ulDifTime = ulStopTime - ulStartTime;
+      ulTimeNaliv = ulTimeNaliv + ulDifTime;
 #if(_DEBAG_)
-        Serial.println(ulTimeNaliv);
+      Serial.println(ulTimeNaliv);
 #endif
-        digitalWrite(PIN_PUMP_ON, 0);
-      }
-    }
-    if (buttEnt.isClick() ) {
-      if (bygPosN == 1 or bygPosN == 3 or bygPosN == 5 ) {
-        switch (bygPosN) {
-          case 1:
-            iDoza = 0;
-            break;
-          case 3:
-            iDoza = 1;
-            break;
-          case 5:
-            iDoza = 2;
-            break;
-        }// end switch
-        if ( bygRum[bygPosN] == 1) {
-          vPump(ulTimePamp[iDoza]);
-          bygRum[bygPosN] = 2;
-          vSensRumsRefresh();
-        }
-      }
-      if (bygPosN == 6 ) {
-        vSaveTimePomp();
-        cascade[0].setRow(7, 0);
-      }
-    }
-  }
-  void vPump(unsigned long ulTime) {
-    if (ulTime > 0) {
-      myTimer.setTimeout(ulTime);   // настроить таймаут
-      digitalWrite(PIN_PUMP_ON, 1);
-      while (!myTimer.isReady()) {
-        bSensRums();
-      }
       digitalWrite(PIN_PUMP_ON, 0);
     }
   }
-  void  DelayWithSensRum(unsigned long ulTime) {
+  if (buttEnt.isClick() ) {
+    if (bygPosN == 1 or bygPosN == 3 or bygPosN == 5 ) {
+      switch (bygPosN) {
+        case 1:
+          iDoza = 0;
+          break;
+        case 3:
+          iDoza = 1;
+          break;
+        case 5:
+          iDoza = 2;
+          break;
+      }// end switch
+      if ( bygRum[bygPosN] == 1) {
+        vPump(ulTimePamp[iDoza]);
+        bygRum[bygPosN] = 2;
+        vSensRumsRefresh();
+      }
+    }
+    if (bygPosN == 6 ) {
+      vSaveTimePomp();
+      cascade[0].setRow(7, 0);
+    }
+  }
+}
+void vPump(unsigned long ulTime) {
+  if (ulTime > 0) {
     myTimer.setTimeout(ulTime);   // настроить таймаут
+    digitalWrite(PIN_PUMP_ON, 1);
     while (!myTimer.isReady()) {
       bSensRums();
     }
+    digitalWrite(PIN_PUMP_ON, 0);
   }
-  int  DelayWithSensRum( byte iStatCuret, byte StatJamp) {
+}
+void  DelayWithSensRum(unsigned long ulTime) {
+  myTimer.setTimeout(ulTime);   // настроить таймаут
+  while (!myTimer.isReady()) {
+    bSensRums();
+  }
+}
+int  DelayWithSensRum( byte iStatCuret, byte StatJamp) {
 
-    if (myTimer.isReady()) {
-      return StatJamp;
-    } else {
-      return iStatCuret;
-    }
+  if (myTimer.isReady()) {
+    return StatJamp;
+  } else {
+    return iStatCuret;
   }
-  void vNaliv(byte iDoz) {
-    bygPosNaliv = 0;
-    while (bygPosNaliv < 100) {
-      bSensRums();
-      switch (bygPosNaliv) {
-        case 0:
-          bygPosNaliv = 10;
-          break;
-        case 10:
-          if ( bygRum[0] == 1) {// 1 рюмка
-            bPovorot(bygPosDeg[0]);
-            //          DelayWithSensRum(_DO_NALIV);
+}
+void vNaliv(byte iDoz) {
+  bygPosNaliv = 0;
+  while (bygPosNaliv < 100) {
+    bSensRums();
+    switch (bygPosNaliv) {
+      case 0:
+        bygPosNaliv = 10;
+        break;
+      case 10:
+        if ( bygRum[0] == 1) {// 1 рюмка
+          bPovorot(bygPosDeg[0]);
+          //          DelayWithSensRum(_DO_NALIV);
+          switch (iDoz) {
+            case 3:
+              vPump(ulTimePamp[2]);
+              break;
+            case 4:
+              vPump(ulTimePamp[2]);
+              break;
+            default:
+              vPump(ulTimePamp[bygDoza]);
+          }
+          DelayWithSensRum(_POSLE_NALIV);
+          bygRum[0] = 2;
+        }
+        bygPosNaliv = 20;
+        break;
+      case 20:
+        if ( bygRum[1] == 1) {// 2 рюмка
+          bPovorot(bygPosDeg[1]);
+          DelayWithSensRum(_DO_NALIV);
+          if ( bygRum[1] == 1) {
+#if(_DEBAG_)
+            Serial.println(iDoz);
+#endif
             switch (iDoz) {
               case 3:
                 vPump(ulTimePamp[2]);
@@ -1148,242 +1171,239 @@ void loop() {
               default:
                 vPump(ulTimePamp[bygDoza]);
             }
-            DelayWithSensRum(_POSLE_NALIV);
-            bygRum[0] = 2;
           }
-          bygPosNaliv = 20;
-          break;
-        case 20:
-          if ( bygRum[1] == 1) {// 2 рюмка
-            bPovorot(bygPosDeg[1]);
-            DelayWithSensRum(_DO_NALIV);
-            if ( bygRum[1] == 1) {
-#if(_DEBAG_)
-              Serial.println(iDoz);
-#endif
-              switch (iDoz) {
-                case 3:
-                  vPump(ulTimePamp[2]);
-                  break;
-                case 4:
-                  vPump(ulTimePamp[2]);
-                  break;
-                default:
-                  vPump(ulTimePamp[bygDoza]);
-              }
+          DelayWithSensRum(_POSLE_NALIV);
+          bygRum[1] = 2;
+        }
+        bygPosNaliv = 30;
+        break;
+      case 30:
+        if ( bygRum[2] == 1) {// 3 рюмка
+          bPovorot(bygPosDeg[2]);
+          DelayWithSensRum(_DO_NALIV);
+          if ( bygRum[2] == 1) {
+            switch (iDoz) {
+              case 3:
+                vPump(ulTimePamp[1]);
+                break;
+              case 4:
+                vPump(ulTimePamp[2]);
+                break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
-            DelayWithSensRum(_POSLE_NALIV);
-            bygRum[1] = 2;
           }
-          bygPosNaliv = 30;
-          break;
-        case 30:
-          if ( bygRum[2] == 1) {// 3 рюмка
-            bPovorot(bygPosDeg[2]);
-            DelayWithSensRum(_DO_NALIV);
-            if ( bygRum[2] == 1) {
-              switch (iDoz) {
-                case 3:
-                  vPump(ulTimePamp[1]);
-                  break;
-                case 4:
-                  vPump(ulTimePamp[2]);
-                  break;
-                default:
-                  vPump(ulTimePamp[bygDoza]);
-              }
+          DelayWithSensRum(_POSLE_NALIV);
+          bygRum[2] = 2;
+        }
+        bygPosNaliv = 40;
+        break;
+      case 40:
+        if ( bygRum[3] == 1) {// 4 рюмка
+          bPovorot(bygPosDeg[3]);
+          DelayWithSensRum(_DO_NALIV);
+          if ( bygRum[3] == 1) {
+            switch (iDoz) {
+              case 3:
+                vPump(ulTimePamp[1]);
+                break;
+              case 4:
+                vPump(ulTimePamp[1]);
+                break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
-            DelayWithSensRum(_POSLE_NALIV);
-            bygRum[2] = 2;
           }
-          bygPosNaliv = 40;
-          break;
-        case 40:
-          if ( bygRum[3] == 1) {// 4 рюмка
-            bPovorot(bygPosDeg[3]);
-            DelayWithSensRum(_DO_NALIV);
-            if ( bygRum[3] == 1) {
-              switch (iDoz) {
-                case 3:
-                  vPump(ulTimePamp[1]);
-                  break;
-                case 4:
-                  vPump(ulTimePamp[1]);
-                  break;
-                default:
-                  vPump(ulTimePamp[bygDoza]);
-              }
+          DelayWithSensRum(_POSLE_NALIV);
+          bygRum[3] = 2;
+        }
+        bygPosNaliv = 50;
+        break;
+      case 50:
+        if ( bygRum[4] == 1) {// 5 рюмка
+          bPovorot(bygPosDeg[4]);
+          DelayWithSensRum(_DO_NALIV);
+          if ( bygRum[4] == 1) {
+            switch (iDoz) {
+              case 3:
+                vPump(ulTimePamp[0]);
+                break;
+              case 4:
+                vPump(ulTimePamp[1]);
+                break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
-            DelayWithSensRum(_POSLE_NALIV);
-            bygRum[3] = 2;
           }
-          bygPosNaliv = 50;
-          break;
-        case 50:
-          if ( bygRum[4] == 1) {// 5 рюмка
-            bPovorot(bygPosDeg[4]);
-            DelayWithSensRum(_DO_NALIV);
-            if ( bygRum[4] == 1) {
-              switch (iDoz) {
-                case 3:
-                  vPump(ulTimePamp[0]);
-                  break;
-                case 4:
-                  vPump(ulTimePamp[1]);
-                  break;
-                default:
-                  vPump(ulTimePamp[bygDoza]);
-              }
+          DelayWithSensRum(_POSLE_NALIV);
+          bygRum[4] = 2;
+        }
+        bygPosNaliv = 60;
+        break;
+      case 60:
+        if ( bygRum[5] == 1) {// 6 рюмка
+          bPovorot(bygPosDeg[5]);
+          DelayWithSensRum(_DO_NALIV);
+          if ( bygRum[5] == 1) {
+            switch (iDoz) {
+              case 3:
+                vPump(ulTimePamp[0]);
+                break;
+              case 4:
+                vPump(ulTimePamp[1]);
+                break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
-            DelayWithSensRum(_POSLE_NALIV);
-            bygRum[4] = 2;
           }
-          bygPosNaliv = 60;
-          break;
-        case 60:
-          if ( bygRum[5] == 1) {// 6 рюмка
-            bPovorot(bygPosDeg[5]);
-            DelayWithSensRum(_DO_NALIV);
-            if ( bygRum[5] == 1) {
-              switch (iDoz) {
-                case 3:
-                  vPump(ulTimePamp[0]);
-                  break;
-                case 4:
-                  vPump(ulTimePamp[1]);
-                  break;
-                default:
-                  vPump(ulTimePamp[bygDoza]);
-              }
-            }
-            DelayWithSensRum(_POSLE_NALIV);
-            bygRum[5] = 2;
-          }
-          bygPosNaliv = 70;
-          break;
-        case 70:
-          bPovorot(bygPosDeg[0]);
-          bygPosNaliv = 100;
-          break;
-      }
+          DelayWithSensRum(_POSLE_NALIV);
+          bygRum[5] = 2;
+        }
+        bygPosNaliv = 70;
+        break;
+      case 70:
+        bPovorot(bygPosDeg[0]);
+        bygPosNaliv = 100;
+        break;
     }
   }
-  void vPrintCapBat() {
+}
+void vPrintCapBat() {
 
-    int capacity;
-    int volts =  analogRead(7) * _ARDUINO_PIT / 1023 * 1000;
-    if (volts > 3870)
-      capacity = map(volts, 4200, 3870, 100, 77);
-    else if ((volts <= 3870) && (volts > 3750) )
-      capacity = map(volts, 3870, 3750, 77, 54);
-    else if ((volts <= 3750) && (volts > 3680) )
-      capacity = map(volts, 3750, 3680, 54, 31);
-    else if ((volts <= 3680) && (volts > 3400) )
-      capacity = map(volts, 3680, 3400, 31, 8);
-    else if (volts <= 3400)
-      capacity = map(volts, 3400, 2600, 8, 0);
+  int capacity;
+  int volts =  analogRead(7) * _ARDUINO_PIT / 1023 * 1000;
+  if (volts > 3870)
+    capacity = map(volts, 4200, 3870, 100, 77);
+  else if ((volts <= 3870) && (volts > 3750) )
+    capacity = map(volts, 3870, 3750, 77, 54);
+  else if ((volts <= 3750) && (volts > 3680) )
+    capacity = map(volts, 3750, 3680, 54, 31);
+  else if ((volts <= 3680) && (volts > 3400) )
+    capacity = map(volts, 3680, 3400, 31, 8);
+  else if (volts <= 3400)
+    capacity = map(volts, 3400, 2600, 8, 0);
 #if(_PRINT_BAT_)
-    Serial.println(volts);
-    Serial.println(capacity);
+  Serial.println(volts);
+  Serial.println(capacity);
 #endif
-    if (capacity <= 10) {
-      fPrintChar(10);// батарейка 0 -10%
-    }
-    if ((10 < capacity) && (capacity <= 30) ) {
-      fPrintChar(11);// батарейка 10 - 30%
-    }
-    if ((30 < capacity) && (capacity <= 50) ) {
-      fPrintChar(12);// батарейка 30 - 50%
-    }
-    if ((50 < capacity) && (capacity <= 60)) {
-      fPrintChar(13);// батарейка  50 - 60 %
-    }
-    if ((60 < capacity) && (capacity <= 80)) {
-      fPrintChar(14);// батарейка  60 - 80%
-    }
-    if ((80 < capacity) && (capacity <= 90)) {
-      fPrintChar(15);// батарейка 80% - 90%
-    }
-    if ( capacity > 90) {
-      fPrintChar(16);// батарейка 100%
-    }
+  if (capacity <= 10) {
+    fPrintChar(10);// батарейка 0 -10%
   }
-  bool vLedEf2(byte * LedData, bool bButton) {
-    static bool bFlag;
-    static byte iCount = 0;
-    if (bButton) {
-      bFlag = 1;
-      iCount = 0;
-      cascade[1].clear();
-    }
+  if ((10 < capacity) && (capacity <= 30) ) {
+    fPrintChar(11);// батарейка 10 - 30%
+  }
+  if ((30 < capacity) && (capacity <= 50) ) {
+    fPrintChar(12);// батарейка 30 - 50%
+  }
+  if ((50 < capacity) && (capacity <= 60)) {
+    fPrintChar(13);// батарейка  50 - 60 %
+  }
+  if ((60 < capacity) && (capacity <= 80)) {
+    fPrintChar(14);// батарейка  60 - 80%
+  }
+  if ((80 < capacity) && (capacity <= 90)) {
+    fPrintChar(15);// батарейка 80% - 90%
+  }
+  if ( capacity > 90) {
+    fPrintChar(16);// батарейка 100%
+  }
+}
+bool vLedEf2(byte * LedData, bool bButton) {
+  static bool bFlag;
+  static byte iCount = 0;
+  if (bButton) {
+    bFlag = 1;
+    iCount = 0;
+    cascade[1].clear();
+  }
 
-    if (( (LedData[iCount] != 0) && myTimer.isReady()) || bFlag ) {
-      myTimer.setTimeout(LedData[iCount] * 100); // настроить таймаут
-      iCount++;
-      cascade[1].setRow(0, LedData[iCount]);//red
-      iCount++;
-      cascade[1].setRow(1, LedData[iCount]);//green
-      iCount++;
-      cascade[1].setRow(2, LedData[iCount]);//blue
-      iCount++;
-      bFlag = 0;
-      return 0;
+  if (( (LedData[iCount] != 0) && myTimer.isReady()) || bFlag ) {
+    myTimer.setTimeout(LedData[iCount] * 100); // настроить таймаут
+    iCount++;
+    cascade[1].setRow(0, LedData[iCount]);//red
+    iCount++;
+    cascade[1].setRow(1, LedData[iCount]);//green
+    iCount++;
+    cascade[1].setRow(2, LedData[iCount]);//blue
+    iCount++;
+    bFlag = 0;
+    return 0;
+  } else {
+    if ( LedData[iCount] == 0) {
+      return 1;
+    } else return 0;
+  }
+}
+byte LedEfNum(bool bPlus, bool bMinus) {
+  static byte iNum;
+  if (bPlus && (iNum < 9)) {
+    iNum++;
+    fPrintChar(iNum);
+  }
+  if (bMinus && (iNum > 0)) {
+    iNum--;
+    fPrintChar(iNum);
+  }
+  return iNum;
+}
+void vLedEfSel(int iSel) {
+  switch (iSel) {
+    case 1:
+      vLedEf2(LedData1,  buttEnt.isSingle());
+      break;
+    case 2:
+      vLedEf2(LedData2,  buttEnt.isSingle());
+      break;
+    case 3:
+      vLedEf2(LedData3,  buttEnt.isSingle());
+      break;
+  }
+}
+void vRuchLeds() {
+  for (byte iPosFor = 0; iPosFor < 6; iPosFor++) {
+    if ( bygRumRuch[iPosFor] == 0) {
+      cascade[1].on(0, iPosFor + 1 ); //красный
+      cascade[1].off(1, iPosFor + 1);//зеленый
+      cascade[1].off(2, iPosFor + 1);// синий
     } else {
-      if ( LedData[iCount] == 0) {
-        return 1;
-      } else return 0;
+      cascade[1].off(0, iPosFor + 1 ); //красный
+      cascade[1].on(1, iPosFor + 1);//зеленый
+      cascade[1].off(2, iPosFor + 1);// синий
     }
   }
-  byte LedEfNum(bool bPlus, bool bMinus) {
-    static byte iNum;
-    if (bPlus && (iNum < 9)) {
-      iNum++;
-      fPrintChar(iNum);
-    }
-    if (bMinus && (iNum > 0)) {
-      iNum--;
-      fPrintChar(iNum);
-    }
-    return iNum;
-  }
-  void vLedEfSel(int iSel) {
-    switch (iSel) {
-      case 1:
-        vLedEf2(LedData1,  buttEnt.isSingle());
+}
+void vNalivR(byte iDoz) {
+  bygPosNaliv = 0;
+  while (bygPosNaliv < 100) {
+    bSensRums();
+    switch (bygPosNaliv) {
+      case 0:
+        bygPosNaliv = 10;
         break;
-      case 2:
-        vLedEf2(LedData2,  buttEnt.isSingle());
+      case 10:
+        if ( bygRumRuch[0] == 1) {
+          bPovorot(bygPosDeg[0]);
+          //          DelayWithSensRum(_DO_NALIV);
+          switch (iDoz) {
+            case 3:
+              vPump(ulTimePamp[2]);
+              break;
+            case 4:
+              vPump(ulTimePamp[2]);
+              break;
+            default:
+              vPump(ulTimePamp[bygDoza]);
+          }
+          DelayWithSensRum(_POSLE_NALIV);
+          //   bygRumRuch[0] = 2;
+        }
+        bygPosNaliv = 20;
         break;
-      case 3:
-        vLedEf2(LedData3,  buttEnt.isSingle());
-        break;
-    }
-  }
-  void vRuchLeds() {
-    for (byte iPosFor = 0; iPosFor < 6; iPosFor++) {
-      if ( bygRumRuch[iPosFor] == 0) {
-        cascade[1].on(0, iPosFor + 1 ); //красный
-        cascade[1].off(1, iPosFor + 1);//зеленый
-        cascade[1].off(2, iPosFor + 1);// синий
-      } else {
-        cascade[1].off(0, iPosFor + 1 ); //красный
-        cascade[1].on(1, iPosFor + 1);//зеленый
-        cascade[1].off(2, iPosFor + 1);// синий
-      }
-    }
-  }
-  void vNalivR(byte iDoz) {
-    bygPosNaliv = 0;
-    while (bygPosNaliv < 100) {
-      bSensRums();
-      switch (bygPosNaliv) {
-        case 0:
-          bygPosNaliv = 10;
-          break;
-        case 10:
-          if ( bygRumRuch[0] == 1) {
-            bPovorot(bygPosDeg[0]);
-            //          DelayWithSensRum(_DO_NALIV);
+      case 20:
+        if ( bygRumRuch[1] == 1) {
+          bPovorot(bygPosDeg[1]);
+          DelayWithSensRum(_DO_NALIV);
+          if ( bygRumRuch[1] == 1) {
             switch (iDoz) {
               case 3:
                 vPump(ulTimePamp[2]);
@@ -1394,150 +1414,130 @@ void loop() {
               default:
                 vPump(ulTimePamp[bygDoza]);
             }
-            DelayWithSensRum(_POSLE_NALIV);
-            //   bygRumRuch[0] = 2;
           }
-          bygPosNaliv = 20;
-          break;
-        case 20:
-          if ( bygRumRuch[1] == 1) {
-            bPovorot(bygPosDeg[1]);
-            DelayWithSensRum(_DO_NALIV);
-            if ( bygRumRuch[1] == 1) {
-              switch (iDoz) {
-                case 3:
-                  vPump(ulTimePamp[2]);
-                  break;
-                case 4:
-                  vPump(ulTimePamp[2]);
-                  break;
-                default:
-                  vPump(ulTimePamp[bygDoza]);
-              }
-            }
-            DelayWithSensRum(_POSLE_NALIV);
-            //          bygRumRuch[1] = 2;
-          }
-          bygPosNaliv = 30;
-          break;
-        case 30:
+          DelayWithSensRum(_POSLE_NALIV);
+          //          bygRumRuch[1] = 2;
+        }
+        bygPosNaliv = 30;
+        break;
+      case 30:
+        if ( bygRumRuch[2] == 1) {
+          bPovorot(bygPosDeg[2]);
+          DelayWithSensRum(_DO_NALIV);
           if ( bygRumRuch[2] == 1) {
-            bPovorot(bygPosDeg[2]);
-            DelayWithSensRum(_DO_NALIV);
-            if ( bygRumRuch[2] == 1) {
-              switch (iDoz) {
-                case 3:
-                  vPump(ulTimePamp[1]);
-                  break;
-                case 4:
-                  vPump(ulTimePamp[2]);
-                  break;
-                default:
-                  vPump(ulTimePamp[bygDoza]);
-              }
+            switch (iDoz) {
+              case 3:
+                vPump(ulTimePamp[1]);
+                break;
+              case 4:
+                vPump(ulTimePamp[2]);
+                break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
-            DelayWithSensRum(_POSLE_NALIV);
-            //         bygRumRuch[2] = 2;
           }
-          bygPosNaliv = 40;
-          break;
-        case 40:
+          DelayWithSensRum(_POSLE_NALIV);
+          //         bygRumRuch[2] = 2;
+        }
+        bygPosNaliv = 40;
+        break;
+      case 40:
+        if ( bygRumRuch[3] == 1) {
+          bPovorot(bygPosDeg[3]);
+          DelayWithSensRum(_DO_NALIV);
           if ( bygRumRuch[3] == 1) {
-            bPovorot(bygPosDeg[3]);
-            DelayWithSensRum(_DO_NALIV);
-            if ( bygRumRuch[3] == 1) {
-              switch (iDoz) {
-                case 3:
-                  vPump(ulTimePamp[1]);
-                  break;
-                case 4:
-                  vPump(ulTimePamp[1]);
-                  break;
-                default:
-                  vPump(ulTimePamp[bygDoza]);
-              }
+            switch (iDoz) {
+              case 3:
+                vPump(ulTimePamp[1]);
+                break;
+              case 4:
+                vPump(ulTimePamp[1]);
+                break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
-            DelayWithSensRum(_POSLE_NALIV);
-            //         bygRumRuch[3] = 2;
           }
-          bygPosNaliv = 50;
-          break;
-        case 50:
+          DelayWithSensRum(_POSLE_NALIV);
+          //         bygRumRuch[3] = 2;
+        }
+        bygPosNaliv = 50;
+        break;
+      case 50:
+        if ( bygRumRuch[4] == 1) {
+          bPovorot(bygPosDeg[4]);
+          DelayWithSensRum(_DO_NALIV);
           if ( bygRumRuch[4] == 1) {
-            bPovorot(bygPosDeg[4]);
-            DelayWithSensRum(_DO_NALIV);
-            if ( bygRumRuch[4] == 1) {
-              switch (iDoz) {
-                case 3:
-                  vPump(ulTimePamp[0]);
-                  break;
-                case 4:
-                  vPump(ulTimePamp[1]);
-                  break;
-                default:
-                  vPump(ulTimePamp[bygDoza]);
-              }
+            switch (iDoz) {
+              case 3:
+                vPump(ulTimePamp[0]);
+                break;
+              case 4:
+                vPump(ulTimePamp[1]);
+                break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
-            DelayWithSensRum(_POSLE_NALIV);
-            //          bygRumRuch[4] = 2;
           }
-          bygPosNaliv = 60;
-          break;
-        case 60:
+          DelayWithSensRum(_POSLE_NALIV);
+          //          bygRumRuch[4] = 2;
+        }
+        bygPosNaliv = 60;
+        break;
+      case 60:
+        if ( bygRumRuch[5] == 1) {
+          bPovorot(bygPosDeg[5]);
+          DelayWithSensRum(_DO_NALIV);
           if ( bygRumRuch[5] == 1) {
-            bPovorot(bygPosDeg[5]);
-            DelayWithSensRum(_DO_NALIV);
-            if ( bygRumRuch[5] == 1) {
-              switch (iDoz) {
-                case 3:
-                  vPump(ulTimePamp[0]);
-                  break;
-                case 4:
-                  vPump(ulTimePamp[1]);
-                  break;
-                default:
-                  vPump(ulTimePamp[bygDoza]);
-              }
+            switch (iDoz) {
+              case 3:
+                vPump(ulTimePamp[0]);
+                break;
+              case 4:
+                vPump(ulTimePamp[1]);
+                break;
+              default:
+                vPump(ulTimePamp[bygDoza]);
             }
-            DelayWithSensRum(_POSLE_NALIV);
-            //          bygRumRuch[5] = 2;
           }
-          bygPosNaliv = 70;
-          break;
-        case 70:
-          bPovorot(bygPosDeg[0]);
-          bygPosNaliv = 100;
-          break;
-      }
+          DelayWithSensRum(_POSLE_NALIV);
+          //          bygRumRuch[5] = 2;
+        }
+        bygPosNaliv = 70;
+        break;
+      case 70:
+        bPovorot(bygPosDeg[0]);
+        bygPosNaliv = 100;
+        break;
     }
   }
-  void vTuneFotosensR() {
-    igUstDif[0] = (igUst[0] -  analogRead(1)) / 4;
-    igUstDif[1] =  (igUst[1] -  analogRead(2)) / 4;
-    igUstDif[2] =  (igUst[2] -  analogRead(3)) / 4;
-    igUstDif[3] =  (igUst[3] -  analogRead(4)) / 4;
-    igUstDif[4] =  (igUst[4] -  analogRead(5)) / 4;
-    igUstDif[5] =  (igUst[5] -  analogRead(6)) / 4;
+}
+void vTuneFotosensR() {
+  igUstDif[0] = (igUst[0] -  analogRead(1)) / 4;
+  igUstDif[1] =  (igUst[1] -  analogRead(2)) / 4;
+  igUstDif[2] =  (igUst[2] -  analogRead(3)) / 4;
+  igUstDif[3] =  (igUst[3] -  analogRead(4)) / 4;
+  igUstDif[4] =  (igUst[4] -  analogRead(5)) / 4;
+  igUstDif[5] =  (igUst[5] -  analogRead(6)) / 4;
 #if(_DEBAG_)
-    Serial.println( igUstDif[0]);
-    Serial.println( igUstDif[1]);
-    Serial.println( igUstDif[2]);
-    Serial.println( igUstDif[3]);
-    Serial.println( igUstDif[4]);
-    Serial.println( igUstDif[5]);
-    Serial.println("Уставки диф");
+  Serial.println( igUstDif[0]);
+  Serial.println( igUstDif[1]);
+  Serial.println( igUstDif[2]);
+  Serial.println( igUstDif[3]);
+  Serial.println( igUstDif[4]);
+  Serial.println( igUstDif[5]);
+  Serial.println("Уставки диф");
 #endif
+}
+void vPrintDoza(byte bySdvig, byte bySdvig2) {
+  fPrintChar(bygDoza + bySdvig);
+  switch (bygDoza) {
+    case 3:
+      fPrintChar(bygDoza + bySdvig2);
+      break;
+    case 4:
+      fPrintChar(bygDoza + bySdvig2);
+      break;
+    default:
+      fPrintChar(bygDoza + bySdvig);
   }
-  void vPrintDoza(byte bySdvig, byte bySdvig2) {
-    fPrintChar(bygDoza + bySdvig);
-    switch (bygDoza) {
-      case 3:
-        fPrintChar(bygDoza + bySdvig2);
-        break;
-      case 4:
-        fPrintChar(bygDoza + bySdvig2);
-        break;
-      default:
-        fPrintChar(bygDoza + bySdvig);
-    }
-  }
+}
