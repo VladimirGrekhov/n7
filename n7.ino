@@ -262,20 +262,20 @@ void loop() {
 #endif
       }
       if (buttUp.isClick() ) {
-        // vSensRumsRefresh();
-        myTimer.setTimeout(_POW_OFF);
         if (bygDoza < 4) {
           bygDoza++;
           vPrintDoza(18, 32);
         }
+         myTimer.setTimeout(_POW_OFF);
       }
       if (buttDn.isClick()  ) {
         // vSensRumsRefresh();
-        myTimer.setTimeout(_POW_OFF);
+        
         if (bygDoza > 0) {
           bygDoza--;
           vPrintDoza(18, 32);
         }
+        myTimer.setTimeout(_POW_OFF);
       }
       if (buttDn.isHolded()) {
         bygStatus = 70;//
@@ -579,8 +579,8 @@ void loop() {
 #endif
       }
       if (buttEnt.isClick() ) {
-        myTimer.setTimeout(_POW_OFF);
         vNalivR(bygDoza);
+        myTimer.setTimeout(_POW_OFF);
       }
 
       if (buttUp.isClick() ) {
