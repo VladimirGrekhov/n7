@@ -22,20 +22,21 @@
 #define _DO_NALIV 100 //задержка до налива мс
 #define _POSLE_NALIV 200 //задержка после налива мс
 
-#define _POW_OFF 60000 //задержка на отключение светодиодов !!!
-#define _POW_OFF_A 120000 //задержка на отключение светодиодов !!!
+#define _POW_OFF 60000 //тайм аут на отключение питания !!!
+#define _POW_OFF_A 120000 //тайм аут на отключение питания в режиме автоналива !!!
 
 
 
 #define _EPP_CON 88 //
 
 
-#define _ARDUINO_PIT 5 //5.01 ножка питания ардуино
+#define _ARDUINO_PIT 5 //5 вольт ножка питания ардуино
 #define BTN_ENT_PIN 2// пин кнопки ввод
 #define BTN_UP_PIN 3// пин кнопки +
 #define BTN_DN_PIN 4// пин кнопки -
-#define PIN_SERVO 7
+#define PIN_POWER_ON 5
 #define PIN_SERVO_ON 6
+#define PIN_SERVO 7
 #define PIN_PUMP_ON 9
 
 //#define _B 0
@@ -82,8 +83,8 @@ byte bygTemp1;
 byte bygPosNaliv = 0;
 
 void setup() {
-  pinMode(5, OUTPUT);
-  digitalWrite(5, 0);
+  pinMode(PIN_POWER_ON, OUTPUT);
+  digitalWrite(PIN_POWER_ON, 0);// 0 включить питание
   pinMode(PIN_SERVO_ON, OUTPUT);
   pinMode(PIN_PUMP_ON, OUTPUT);
   digitalWrite(PIN_PUMP_ON, 0);
@@ -101,11 +102,6 @@ void setup() {
 #pragma message "D_E_B_A_G"
   Serial.begin(9600);
 #endif
-#if(_DEBAG_)
-  Serial.println("_DEBAG_");
-#endif
-
-
   EEPROM.get(12, bygTemp);
   if (bygTemp == _EPP_CON) {
     vGetFotoSens();
@@ -200,7 +196,7 @@ void setup() {
   servo.setSpeed(_SPEED_SERVO_R);   // установка максимальной скорости (условные единицы, 0 – 200)
   servo.setAccel(_ACCEL_SERVO_R);  // становка ускорения (0.05 – 1). При значении 1 ускорение максимальное
 
-  servo.setAutoDetach(false); // отключить автоотключение (detach) при достижении целевого угла (по умолчанию включено)
+  servo.setAutoDetach(true); // отключить автоотключение (detach) при достижении целевого угла (по умолчанию включено)
 }
 void loop() {
   buttEnt.tick();  // обязательная функция отработки. Должна постоянно опрашиваться
@@ -233,7 +229,7 @@ void loop() {
 #if(_DEBAG_)
       Serial.println("20-Доза");
 #endif
-      vPrintDoza(18, 32);
+      fPrintChar (18 + bygDoza );
       vSensRumsRefresh();
       buttDn.isHolded();
       buttUp.isHolded();
@@ -264,16 +260,14 @@ void loop() {
       if (buttUp.isClick() ) {
         if (bygDoza < 4) {
           bygDoza++;
-          vPrintDoza(18, 32);
+          fPrintChar (18 + bygDoza);
         }
-         myTimer.setTimeout(_POW_OFF);
+        myTimer.setTimeout(_POW_OFF);
       }
       if (buttDn.isClick()  ) {
-        // vSensRumsRefresh();
-        
         if (bygDoza > 0) {
           bygDoza--;
-          vPrintDoza(18, 32);
+          fPrintChar (18 + bygDoza);
         }
         myTimer.setTimeout(_POW_OFF);
       }
@@ -284,7 +278,9 @@ void loop() {
         bygStatus = 100;// на автоналив
       }
       if (buttEnt.isClick()) {
-        bygStatus = 40;// на налив
+        vPrintCapBat();
+        vNaliv(bygDoza);
+        myTimer.setTimeout(_POW_OFF);
       }
       if (buttEnt.isHolded()) {
         bygRum[0] = 0;
@@ -313,10 +309,10 @@ void loop() {
         cascade[0].on(7, 0);
       }
       if (buttUp.isHolded()) {
-        bygStatus = 70;
+        bygStatus = 70;// на промывку
       }
       if (buttDn.isHolded()) {
-        bygStatus = 60;
+        bygStatus = 60;// на калибровку насоса
       }
       if (buttEnt.isHolded()) {
         vTuneFotosensR();
@@ -324,15 +320,10 @@ void loop() {
         cascade[0].off(7, 0);
       }
       break;
-    case 40:// ****************************************************** 40 налив
-      vPrintCapBat();
-      vNaliv(bygDoza);
-      bygStatus = 20;// на рюмку
-      break;
 
     case 50://******************************************************** 50 калибровка серво
       cascade.clear();
-      fPrintChar(22);//c
+      fPrintChar(42);//c
       bygStatus = 51;
       buttUp.isHolded();
       buttDn.isHolded();
@@ -417,7 +408,7 @@ void loop() {
       cascade.clear();
       bygStatus = 81;
       vPrintCapBat();//   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      digitalWrite(5, 1);
+      digitalWrite(PIN_POWER_ON, 1);// отключить питание
       myTimer.setInterval(300);
       bygTemp = 0;
       bygTemp1 = 0;
@@ -448,7 +439,6 @@ void loop() {
           vPrintCapBat();//   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           digitalWrite(5, 1);
         }
-
       }
 
       break;
@@ -475,7 +465,7 @@ void loop() {
           vLedEfSel(iNumEf);
           break; */
     case 100://**************************************************************** автоналив
-      vPrintDoza(24, 34);
+      fPrintChar (37 + bygDoza); 
       vSensRumsRefresh();
       buttEnt.isClick();
       buttUp.isClick();
@@ -501,7 +491,7 @@ void loop() {
           myTimer.setTimeout(300);   // настроить таймаут
         } else {
           myTimer.stop();
-          vPrintDoza(24, 34);
+          fPrintChar (37); 
         }
         bygTemp = 0;
         myTimer2.setTimeout(_POW_OFF_A);
@@ -515,7 +505,7 @@ void loop() {
         } else {
           myTimer.stop();
           bygTemp = 0;
-          vPrintDoza(24, 34);
+          fPrintChar (37 + bygDoza); 
         }
         if (bygTemp > 10) {
           bygStatus = 102;
@@ -527,21 +517,21 @@ void loop() {
       if (buttEnt.isClick() ) {
         vPrintCapBat();
         vNaliv(bygDoza);
-        vPrintDoza(24, 34);
+        fPrintChar (37 + bygDoza); 
         myTimer2.setTimeout(_POW_OFF_A);
       }
       if (buttUp.isClick() ) {
         myTimer2.setTimeout(_POW_OFF_A);
         if (bygDoza < 4) {
           bygDoza++;
-          vPrintDoza(24, 34);
+          fPrintChar (37 + bygDoza); 
         }
       }
       if (buttDn.isClick()  ) {
         myTimer2.setTimeout(_POW_OFF_A);
         if (bygDoza > 0) {
           bygDoza--;
-          vPrintDoza(24, 34);
+          fPrintChar (37 + bygDoza); 
         }
       }
 
@@ -560,7 +550,7 @@ void loop() {
     case 120://**************************************************************** ручной налив
       vRuchLeds();
       bPovorot(bygPosDeg[0]);
-      vPrintDoza(32, 36);
+      fPrintChar (32 + bygDoza);
       buttEnt.isClick();
       buttUp.isClick();
       buttDn.isClick();
@@ -587,14 +577,14 @@ void loop() {
 
         if (bygDoza < 4) {
           bygDoza++;
-          vPrintDoza(32, 36);
+          fPrintChar (32 + bygDoza);
         }
         myTimer.setTimeout(_POW_OFF);
       }
       if (buttDn.isClick()  ) {
         if (bygDoza > 0) {
           bygDoza--;
-          vPrintDoza(32, 36);
+          fPrintChar (32 + bygDoza);
         }
         myTimer.setTimeout(_POW_OFF);
       }
@@ -614,7 +604,7 @@ void loop() {
       buttDn.isClick();
       buttDn.isHolded();
       buttUp.isHolded();
-      fPrintChar(21);// а
+      fPrintChar (27 + bygDoza);
       bygPosN = 0;
       myTimer.setTimeout(_POW_OFF);
       bygStatus = 131;
@@ -663,7 +653,7 @@ void loop() {
     case 140://**************************************************************** откл
       //      myTimer.setTimeout(_POW_OFF);
       //      cascade.clear();
-      //      vPrintDoza(27, 38);
+      //      fPrintChar (27 + bygDoza);
       //     bygStatus = 141;
       EEPROM.update(52, bygLastStatus);
       EEPROM.update(54, _EPP_CON);
@@ -671,25 +661,25 @@ void loop() {
       vSavebygRum();
       bygStatus = 80;
       break;
-/*    case 141://**************************************************************** sleep
-      if (myTimer.isReady()) {
+      /*    case 141://**************************************************************** sleep
+            if (myTimer.isReady()) {
 
-      }
-      if (bygLastStatus != 120) {
-        if ( bSensRums()) {
-          bygStatus = bygLastStatus;
-        }
-      }
-      if (buttEnt.isClick() ) {
-        bygStatus = bygLastStatus;
-      }
-      if (buttDn.isClick() ) {
-        bygStatus = bygLastStatus;
-      }
-      if (buttUp.isClick() ) {
-        bygStatus = bygLastStatus;
-      }
-      break; */
+            }
+            if (bygLastStatus != 120) {
+              if ( bSensRums()) {
+                bygStatus = bygLastStatus;
+              }
+            }
+            if (buttEnt.isClick() ) {
+              bygStatus = bygLastStatus;
+            }
+            if (buttDn.isClick() ) {
+              bygStatus = bygLastStatus;
+            }
+            if (buttUp.isClick() ) {
+              bygStatus = bygLastStatus;
+            }
+            break; */
   }//switch (bygStatus)
 }// loop
 void fPrintChar(byte iNumChar) {
@@ -1528,17 +1518,4 @@ void vTuneFotosensR() {
   Serial.println( igUstDif[5]);
   Serial.println("Уставки диф");
 #endif
-}
-void vPrintDoza(byte bySdvig, byte bySdvig2) {
-  fPrintChar(bygDoza + bySdvig);
-  switch (bygDoza) {
-    case 3:
-      fPrintChar(bygDoza + bySdvig2);
-      break;
-    case 4:
-      fPrintChar(bygDoza + bySdvig2);
-      break;
-    default:
-      fPrintChar(bygDoza + bySdvig);
-  }
 }
