@@ -5,7 +5,7 @@
 
 #define _LED13_ 0
 
-
+#define _FOTO_DELITEL 2
 
 #define _FOTO_DIF_1 100
 #define _FOTO_DIF_2 100
@@ -223,6 +223,10 @@ void loop() {
         }
         bygStatus = bygLastStatus;
       }
+       if (buttEnt.isDouble()) {
+         bygStatus = 20;
+       }
+      
       vPrintCapBat();
       break;
     case 20://*************************************************************** 20 РЮМКА (Доза)
@@ -278,9 +282,11 @@ void loop() {
         bygStatus = 100;// на автоналив
       }
       if (buttEnt.isClick()) {
+         if ( (bygRum[0] == 1) || (bygRum[1] == 1) || (bygRum[2] == 1) || (bygRum[3] == 1) || (bygRum[4] == 1) || (bygRum[5] == 1)) {
         vPrintCapBat();
         vNaliv(bygDoza);
-        myTimer.setTimeout(_POW_OFF);
+         bygStatus = 20;//
+         }// помигать !!!!
       }
       if (buttEnt.isHolded()) {
         bygRum[0] = 0;
@@ -1503,12 +1509,12 @@ void vNalivR(byte iDoz) {
   }
 }
 void vTuneFotosensR() {
-  igUstDif[0] = (igUst[0] -  analogRead(1)) / 4;
-  igUstDif[1] =  (igUst[1] -  analogRead(2)) / 4;
-  igUstDif[2] =  (igUst[2] -  analogRead(3)) / 4;
-  igUstDif[3] =  (igUst[3] -  analogRead(4)) / 4;
-  igUstDif[4] =  (igUst[4] -  analogRead(5)) / 4;
-  igUstDif[5] =  (igUst[5] -  analogRead(6)) / 4;
+  igUstDif[0] = (igUst[0] -  analogRead(1)) / _FOTO_DELITEL;
+  igUstDif[1] =  (igUst[1] -  analogRead(2)) / _FOTO_DELITEL;
+  igUstDif[2] =  (igUst[2] -  analogRead(3)) / _FOTO_DELITEL;
+  igUstDif[3] =  (igUst[3] -  analogRead(4)) / _FOTO_DELITEL;
+  igUstDif[4] =  (igUst[4] -  analogRead(5)) / _FOTO_DELITEL;
+  igUstDif[5] =  (igUst[5] -  analogRead(6)) / _FOTO_DELITEL;
 #if(_DEBAG_)
   Serial.println( igUstDif[0]);
   Serial.println( igUstDif[1]);
